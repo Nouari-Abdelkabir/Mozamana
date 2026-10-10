@@ -1,0 +1,1 @@
+print("مرحباً! Python يعمل مع VS Code")
