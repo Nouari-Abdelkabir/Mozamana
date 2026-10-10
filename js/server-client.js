@@ -13,7 +13,7 @@
 // ============================================================
 // ✅ نستخدم GitHub Pages (نفس النطاق — لا CORS)
 const GITHUB_BASE = 'https://nouari-abdelkabir.github.io/Mozamana';
-const GITHUB_ALIGNMENTS_PATH = 'data/alignments';
+const GITHUB_ALIGNMENTS_PATH = 'alignments';
 
 // ============================================================
 // بناء مفتاح التخزين
