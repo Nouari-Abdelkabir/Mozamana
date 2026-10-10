@@ -1,0 +1,69 @@
+{
+  "surah_id": 1,
+  "mushaf_id": "mushaf_qalun1",
+  "reciter_id": "husr-qalun",
+  "reciter_code": "husr/Rewayat-Qalon-A-n-Nafi",
+  "reciter_name": "محمود خليل الحصري",
+  "audio_url": "https://server13.mp3quran.net/husr/Rewayat-Qalon-A-n-Nafi/001.mp3",
+  "audio_duration": 52.74,
+  "generated_at": "2026-10-09T20:57:09.982Z",
+  "ayahs": [
+    {
+      "ayah_number": 1,
+      "start": 0,
+      "end": 8.24,
+      "wordCount": 5,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 2,
+      "start": 8.24,
+      "end": 14.83,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 3,
+      "start": 14.83,
+      "end": 18.13,
+      "wordCount": 2,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 4,
+      "start": 18.13,
+      "end": 24.72,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 5,
+      "start": 24.72,
+      "end": 31.32,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 6,
+      "start": 31.32,
+      "end": 36.26,
+      "wordCount": 3,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 7,
+      "start": 36.26,
+      "end": 52.74,
+      "wordCount": 10,
+      "confidence": 1,
+      "manually_verified": false
+    }
+  ],
+  "updated_at": "2026-10-09T20:57:09.982Z"
+}

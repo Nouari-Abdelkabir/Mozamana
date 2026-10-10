@@ -1,0 +1,69 @@
+{
+  "surah_id": 1,
+  "mushaf_id": "mushaf_qunbul",
+  "reciter_id": "deban-qunbul",
+  "reciter_code": "deban/Rewayat-Qunbol-A-n-Ibn-Katheer",
+  "reciter_name": "أحمد ديبان",
+  "audio_url": "https://server16.mp3quran.net/deban/Rewayat-Qunbol-A-n-Ibn-Katheer/001.mp3",
+  "audio_duration": 51.66,
+  "generated_at": "2026-10-09T21:00:43.419Z",
+  "ayahs": [
+    {
+      "ayah_number": 1,
+      "start": 0,
+      "end": 5.74,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 2,
+      "start": 5.74,
+      "end": 11.48,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 3,
+      "start": 11.48,
+      "end": 14.35,
+      "wordCount": 2,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 4,
+      "start": 14.35,
+      "end": 20.09,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 5,
+      "start": 20.09,
+      "end": 25.83,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 6,
+      "start": 25.83,
+      "end": 33.01,
+      "wordCount": 5,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 7,
+      "start": 33.01,
+      "end": 51.66,
+      "wordCount": 13,
+      "confidence": 1,
+      "manually_verified": false
+    }
+  ],
+  "updated_at": "2026-10-09T21:00:43.419Z"
+}

@@ -1,0 +1,69 @@
+{
+  "surah_id": 1,
+  "mushaf_id": "mushaf_soosi",
+  "reciter_id": "yasser-al-atby",
+  "reciter_code": "yasser-al-atby/as-susi-an-abu-amr",
+  "reciter_name": "ياسر العتبي",
+  "audio_url": "https://media.way2quran.com/yasser-al-atby/as-susi-an-abu-amr/001.mp3",
+  "audio_duration": 48,
+  "generated_at": "2026-10-09T21:04:47.178Z",
+  "ayahs": [
+    {
+      "ayah_number": 1,
+      "start": 0,
+      "end": 7.06,
+      "wordCount": 5,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 2,
+      "start": 7.06,
+      "end": 12.71,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 3,
+      "start": 12.71,
+      "end": 16.94,
+      "wordCount": 3,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 4,
+      "start": 16.94,
+      "end": 22.59,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 5,
+      "start": 22.59,
+      "end": 28.24,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 6,
+      "start": 28.24,
+      "end": 32.47,
+      "wordCount": 3,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 7,
+      "start": 32.47,
+      "end": 48,
+      "wordCount": 11,
+      "confidence": 1,
+      "manually_verified": false
+    }
+  ],
+  "updated_at": "2026-10-09T21:04:47.179Z"
+}

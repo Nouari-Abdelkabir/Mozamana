@@ -1,0 +1,69 @@
+{
+  "surah_id": 1,
+  "mushaf_id": "mushaf_ibnJammaz",
+  "reciter_id": "555-ibnJammaz",
+  "reciter_code": "555_20vvvvvv",
+  "reciter_name": "مفتاح السلطني",
+  "audio_url": "https://archive.org/download/555_20vvvvvv/001.mp3",
+  "audio_duration": 44.71,
+  "generated_at": "2026-10-09T21:20:34.667Z",
+  "ayahs": [
+    {
+      "ayah_number": 1,
+      "start": 0,
+      "end": 6.58,
+      "wordCount": 5,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 2,
+      "start": 6.58,
+      "end": 11.84,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 3,
+      "start": 11.84,
+      "end": 14.47,
+      "wordCount": 2,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 4,
+      "start": 14.47,
+      "end": 19.73,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 5,
+      "start": 19.73,
+      "end": 24.99,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 6,
+      "start": 24.99,
+      "end": 28.93,
+      "wordCount": 3,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 7,
+      "start": 28.93,
+      "end": 44.71,
+      "wordCount": 12,
+      "confidence": 1,
+      "manually_verified": false
+    }
+  ],
+  "updated_at": "2026-10-09T21:20:34.667Z"
+}

@@ -1,0 +1,55 @@
+{
+  "surah_id": 1,
+  "mushaf_id": "mushaf_asbahani",
+  "reciter_id": "mnswr-blhaj",
+  "reciter_code": "mnswr-blhaj/warsh-an-nafi-min-tariq-al-asbahani",
+  "reciter_name": "منصور البلحاج",
+  "audio_url": "https://media.way2quran.com/mnswr-blhaj/warsh-an-nafi-min-tariq-al-asbahani/001.mp3",
+  "audio_duration": 43.05,
+  "generated_at": "2026-10-09T23:53:42.708Z",
+  "ayahs": [
+    {
+      "ayah_number": 1,
+      "start": 0,
+      "end": 4.79,
+      "manually_verified": true
+    },
+    {
+      "ayah_number": 2,
+      "start": 4.79,
+      "end": 10.81,
+      "manually_verified": true
+    },
+    {
+      "ayah_number": 3,
+      "start": 10.81,
+      "end": 14.8,
+      "manually_verified": true
+    },
+    {
+      "ayah_number": 4,
+      "start": 14.8,
+      "end": 19.1,
+      "manually_verified": true
+    },
+    {
+      "ayah_number": 5,
+      "start": 19.1,
+      "end": 24.37,
+      "manually_verified": true
+    },
+    {
+      "ayah_number": 6,
+      "start": 24.37,
+      "end": 29.47,
+      "manually_verified": true
+    },
+    {
+      "ayah_number": 7,
+      "start": 29.47,
+      "end": 43.05,
+      "manually_verified": false
+    }
+  ],
+  "updated_at": "2026-10-09T23:53:42.708Z"
+}

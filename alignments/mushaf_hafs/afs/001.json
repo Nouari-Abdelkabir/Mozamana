@@ -1,0 +1,54 @@
+{
+  "surah_id": 1,
+  "mushaf_id": "mushaf_hafs",
+  "reciter_code": "afs",
+  "reciter_name": "مشاري راشد العفاسي",
+  "audio_url": "https://server8.mp3quran.net/afs/001.mp3",
+  "audio_duration": 51.93,
+  "generated_at": "2026-10-09T16:42:45.362Z",
+  "ayahs": [
+    {
+      "ayah_number": 1,
+      "start": 0,
+      "end": 11.6,
+      "manually_verified": true
+    },
+    {
+      "ayah_number": 2,
+      "start": 11.6,
+      "end": 17.72,
+      "manually_verified": true
+    },
+    {
+      "ayah_number": 3,
+      "start": 17.72,
+      "end": 22.24,
+      "manually_verified": true
+    },
+    {
+      "ayah_number": 4,
+      "start": 22.24,
+      "end": 26.65,
+      "manually_verified": true
+    },
+    {
+      "ayah_number": 5,
+      "start": 26.65,
+      "end": 33.71,
+      "manually_verified": true
+    },
+    {
+      "ayah_number": 6,
+      "start": 33.71,
+      "end": 38.84,
+      "manually_verified": true
+    },
+    {
+      "ayah_number": 7,
+      "start": 38.84,
+      "end": 51.93,
+      "manually_verified": true
+    }
+  ],
+  "updated_at": "2026-10-09T16:42:45.362Z"
+}

@@ -1,0 +1,69 @@
+{
+  "surah_id": 1,
+  "mushaf_id": "mushaf_ishaq",
+  "reciter_id": "ishaq_an_khalaf",
+  "reciter_code": "ishaq_an_khalaf",
+  "reciter_name": "مفتاح محمد سُلطاني",
+  "audio_url": "https://archive.org/download/ishaq_an_khalaf/001.mp3",
+  "audio_duration": 66.22,
+  "generated_at": "2026-10-09T21:24:42.482Z",
+  "ayahs": [
+    {
+      "ayah_number": 1,
+      "start": 0,
+      "end": 9.13,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 2,
+      "start": 9.13,
+      "end": 18.27,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 3,
+      "start": 18.27,
+      "end": 22.83,
+      "wordCount": 2,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 4,
+      "start": 22.83,
+      "end": 29.68,
+      "wordCount": 3,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 5,
+      "start": 29.68,
+      "end": 38.82,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 6,
+      "start": 38.82,
+      "end": 45.67,
+      "wordCount": 3,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 7,
+      "start": 45.67,
+      "end": 66.22,
+      "wordCount": 9,
+      "confidence": 1,
+      "manually_verified": false
+    }
+  ],
+  "updated_at": "2026-10-09T21:24:42.482Z"
+}

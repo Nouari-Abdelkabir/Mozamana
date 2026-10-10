@@ -1,0 +1,69 @@
+{
+  "surah_id": 1,
+  "mushaf_id": "mushaf_ibnWardan",
+  "reciter_id": "bvc-ibnWardan",
+  "reciter_code": "bvc65457689565732453567786745635466786878987565y2018_gmail_002_201806",
+  "reciter_name": "عبد الكريم عبد الحكم",
+  "audio_url": "https://archive.org/download/bvc65457689565732453567786745635466786878987565y2018_gmail_002_201806/001.mp3",
+  "audio_duration": 43.38,
+  "generated_at": "2026-10-09T21:19:07.600Z",
+  "ayahs": [
+    {
+      "ayah_number": 1,
+      "start": 0,
+      "end": 6.38,
+      "wordCount": 5,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 2,
+      "start": 6.38,
+      "end": 11.48,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 3,
+      "start": 11.48,
+      "end": 14.04,
+      "wordCount": 2,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 4,
+      "start": 14.04,
+      "end": 19.14,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 5,
+      "start": 19.14,
+      "end": 24.24,
+      "wordCount": 4,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 6,
+      "start": 24.24,
+      "end": 28.07,
+      "wordCount": 3,
+      "confidence": 1,
+      "manually_verified": false
+    },
+    {
+      "ayah_number": 7,
+      "start": 28.07,
+      "end": 43.38,
+      "wordCount": 12,
+      "confidence": 1,
+      "manually_verified": false
+    }
+  ],
+  "updated_at": "2026-10-09T21:19:07.600Z"
+}
