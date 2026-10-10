@@ -7,40 +7,40 @@
    ============================================================ */
 :root {
     /* ------ الألوان الأساسية ------ */
-    --primary: #0D7A5F;
-    --primary-light: #10B981;
-    --primary-dark: #065F46;
-    --primary-glow: rgba(13, 122, 95, 0.15);
+    --primary: #10b981;
+    --primary-light: #34d399;
+    --primary-dark: #059669;
+    --primary-glow: rgba(16, 185, 129, 0.3);
     
-    --accent: #B8860B;
-    --accent-light: #D4A017;
-    --accent-glow: rgba(184, 134, 11, 0.15);
+    --accent: #34d399;
+    --accent-light: #6EE7B7;
+    --accent-glow: rgba(52, 211, 153, 0.2);
     
     /* ------ الخلفيات ------ */
-    --bg-main: #F3F4F6;
-    --bg-card: #FFFFFF;
-    --bg-elevated: #F8FAFC;
-    --bg-input: #F1F5F9;
-    --bg-hover: rgba(13, 122, 95, 0.05);
-    --bg-active: rgba(13, 122, 95, 0.1);
+    --bg-main: #0f172a;
+    --bg-card: rgba(30, 41, 59, 0.9);
+    --bg-elevated:#f8fafc;
+    --bg-input:rgba(15, 23, 42, 0.8);
+    --bg-hover: rgba(16, 185, 129, 0.08);
+    --bg-active: rgba(16, 185, 129, 0.15);
     --bg-quran: #FFFFFF;
     
     /* ------ النصوص ------ */
-    --text-main: #1F2937;
-    --text-secondary: #374151;
-    --text-muted: #6B7280;
+    --text-main: #f8fafc;
+    --text-secondary: #e2e8f0;
+    --text-muted: #94a3b8;
     --text-inverse: #FFFFFF;
     --quran-text: #1F2937;
     
     /* ------ الحدود والظلال ------ */
-    --border-color: #E5E7EB;
-    --border-color-strong: #D1D5DB;
-    --border-color-primary: rgba(13, 122, 95, 0.3);
+ --border-color: rgba(255, 255, 255, 0.1);
+    --border-color-strong: rgba(255, 255, 255, 0.2);
+    --border-color-primary: rgba(16, 185, 129, 0.3);
     
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
-    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
     
     /* ------ الحالات ------ */
     --success: #10B981;
