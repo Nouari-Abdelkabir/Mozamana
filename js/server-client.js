@@ -153,12 +153,111 @@ async function exportAlignment(surahNum, mushafId, reciterId) {
     
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${mushafId}_${reciterId}_${String(surahNum).padStart(3, '0')}.json`;
-    a.click();
-    
+    const filename = `${String(surahNum).padStart(3, '0')}.json`;
+    a.download = filename;
+    console.log(`📁 احفظ الملف في: alignments/${mushafId}/${reciterId}/${filename}`);    a.click();
+        
     URL.revokeObjectURL(url);
     
     return { status: 'exported' };
+    // ============================================================
+    // 4.5. تصدير SRT
+    // ============================================================
+    async function exportAlignmentSRT(surahNum, mushafId, reciterId) {
+        try {
+            const result = await fetchAlignment(surahNum, mushafId, reciterId);
+            
+            if (result.status !== 'found') {
+                return { status: 'error', message: 'لا توجد توقيتات' };
+            }
+            
+            const data = result.data;
+            const ayahs = data.ayahs || [];
+            
+            // بناء SRT
+            let srt = '';
+            ayahs.forEach((ayah, index) => {
+                srt += `${index + 1}\n`;
+                srt += `${formatSRTTime(ayah.start)} --> ${formatSRTTime(ayah.end)}\n`;
+                srt += `الآية ${ayah.ayah_number}\n\n`;
+            });
+            
+            // تنزيل
+            const blob = new Blob([srt], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${mushafId}_${reciterId}_${String(surahNum).padStart(3, '0')}.srt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            return { status: 'exported' };
+            
+        } catch (error) {
+            return { status: 'error', message: error.message };
+        }
+    }
+
+    // ============================================================
+    // 4.6. تصدير VTT
+    // ============================================================
+    async function exportAlignmentVTT(surahNum, mushafId, reciterId) {
+        try {
+            const result = await fetchAlignment(surahNum, mushafId, reciterId);
+            
+            if (result.status !== 'found') {
+                return { status: 'error', message: 'لا توجد توقيتات' };
+            }
+            
+            const data = result.data;
+            const ayahs = data.ayahs || [];
+            
+            // بناء VTT
+            let vtt = 'WEBVTT\n\n';
+            ayahs.forEach((ayah, index) => {
+                vtt += `${index + 1}\n`;
+                vtt += `${formatVTTTime(ayah.start)} --> ${formatVTTTime(ayah.end)}\n`;
+                vtt += `الآية ${ayah.ayah_number}\n\n`;
+            });
+            
+            // تنزيل
+            const blob = new Blob([vtt], { type: 'text/vtt;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${mushafId}_${reciterId}_${String(surahNum).padStart(3, '0')}.vtt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            return { status: 'exported' };
+            
+        } catch (error) {
+            return { status: 'error', message: error.message };
+        }
+    }
+
+    // ============================================================
+    // مساعدات تنسيق الوقت
+    // ============================================================
+    function formatSRTTime(seconds) {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = Math.floor(seconds % 60);
+        const ms = Math.floor((seconds % 1) * 1000);
+        
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')},${String(ms).padStart(3, '0')}`;
+    }
+
+    function formatVTTTime(seconds) {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = Math.floor(seconds % 60);
+        const ms = Math.floor((seconds % 1) * 1000);
+        
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+    }
+
+
 }
 
 // ============================================================
@@ -321,6 +420,8 @@ window.importAlignment = importAlignment;
 window.exportAllAlignments = exportAllAlignments;
 window.importAllAlignments = importAllAlignments;
 window.listGitHubAlignments = listGitHubAlignments;
+window.exportAlignmentSRT = exportAlignmentSRT;
+window.exportAlignmentVTT = exportAlignmentVTT;
 
 console.log('✅ server-client.js محمّل (localStorage + GitHub mode)');
 console.log(`   🌐 GitHub base: ${GITHUB_BASE}`);

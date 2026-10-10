@@ -457,6 +457,100 @@ function bindUIEvents() {
     
     
     console.log('✅ تم ربط الأحداث');
+        // ============================================
+    // 📤 أزرار التصدير
+    // ============================================
+    
+    // زر تصدير JSON
+    const exportJsonBtn = document.getElementById('export-json');
+    if (exportJsonBtn) {
+        exportJsonBtn.addEventListener('click', async () => {
+            console.log('📤 نقر على [تصدير JSON]');
+            
+            if (!UIState.currentMushafId || !UIState.currentReciterId || !UIState.currentSurahNum) {
+                alert('اختر الرواية والقارئ والسورة أولاً');
+                return;
+            }
+            
+            const result = await exportAlignment(
+                UIState.currentSurahNum,
+                UIState.currentMushafId,
+                UIState.currentReciterId
+            );
+            
+            if (result.status === 'exported') {
+                console.log('✅ تم تصدير JSON');
+            } else {
+                alert('❌ لا توجد توقيتات للتصدير');
+            }
+        });
+        console.log('✅ تم ربط زر [تصدير JSON]');
+    }
+    
+    // زر تصدير SRT
+    const exportSrtBtn = document.getElementById('export-srt');
+    if (exportSrtBtn) {
+        exportSrtBtn.addEventListener('click', async () => {
+            console.log('📤 نقر على [تصدير SRT]');
+            
+            if (!UIState.currentMushafId || !UIState.currentReciterId || !UIState.currentSurahNum) {
+                alert('اختر الرواية والقارئ والسورة أولاً');
+                return;
+            }
+            
+            const result = await exportAlignmentSRT(
+                UIState.currentSurahNum,
+                UIState.currentMushafId,
+                UIState.currentReciterId
+            );
+            
+            if (result.status === 'exported') {
+                console.log('✅ تم تصدير SRT');
+            } else {
+                alert('❌ لا توجد توقيتات للتصدير');
+            }
+        });
+    }
+    
+    // زر تصدير VTT
+    const exportVttBtn = document.getElementById('export-vtt');
+    if (exportVttBtn) {
+        exportVttBtn.addEventListener('click', async () => {
+            console.log('📤 نقر على [تصدير VTT]');
+            
+            if (!UIState.currentMushafId || !UIState.currentReciterId || !UIState.currentSurahNum) {
+                alert('اختر الرواية والقارئ والسورة أولاً');
+                return;
+            }
+            
+            const result = await exportAlignmentVTT(
+                UIState.currentSurahNum,
+                UIState.currentMushafId,
+                UIState.currentReciterId
+            );
+            
+            if (result.status === 'exported') {
+                console.log('✅ تم تصدير VTT');
+            } else {
+                alert('❌ لا توجد توقيتات للتصدير');
+            }
+        });
+    }
+    
+    // زر استعادة التوقيتات
+    const resetAllBtn = document.getElementById('reset-all-btn');
+    if (resetAllBtn) {
+        resetAllBtn.addEventListener('click', async () => {
+            if (!confirm('هل تريد حذف جميع التوقيتات المحفوظة؟')) return;
+            
+            const result = await clearAllAlignments();
+            alert(`✅ تم حذف ${result.deleted} توقيت`);
+            
+            // أعد تحديث الحالة
+            updateAlignmentStatus();
+        });
+    }
+    
 }
 
 // ============================================================
