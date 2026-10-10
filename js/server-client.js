@@ -11,7 +11,8 @@
 // ============================================================
 // إعدادات GitHub
 // ============================================================
-const GITHUB_BASE = 'https://raw.githubusercontent.com/nouari-abdelkabir/Mozamana/main';
+// ✅ نستخدم GitHub Pages (نفس النطاق — لا CORS)
+const GITHUB_BASE = 'https://nouari-abdelkabir.github.io/Mozamana';
 const GITHUB_ALIGNMENTS_PATH = 'data/alignments';
 
 // ============================================================
