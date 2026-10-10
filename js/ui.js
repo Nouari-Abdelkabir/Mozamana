@@ -455,6 +455,7 @@ function bindUIEvents() {
         });
     }
     
+    
     console.log('✅ تم ربط الأحداث');
 }
 

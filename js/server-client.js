@@ -1,47 +1,89 @@
 /**
- * عميل الخادم
- * Miqat - Server Client
+ * عميل التخزين — مع تحميل من GitHub
+ * Miqat - Client Storage (localStorage + GitHub)
  *
- * يتواصل مع خادم Python المحلي (server.py)
- * - جلب التوقيتات
- * - حفظ التوقيتات
- * - قائمة التوقيتات المتاحة
+ * يعمل على:
+ * - GitHub Pages (يحمّل من GitHub)
+ * - محلياً (localStorage فقط)
+ * - أي مكان (بدون Backend)
  */
 
 // ============================================================
-// الإعدادات
+// إعدادات GitHub
 // ============================================================
-const SERVER_BASE_URL = window.location.origin; // http://localhost:8000
+const GITHUB_BASE = 'https://raw.githubusercontent.com/nouari-abdelkabir/Mozamana/main';
+const GITHUB_ALIGNMENTS_PATH = 'data/alignments';
 
 // ============================================================
-// بناء معرف الملف: mushaf_hafs/afs
+// بناء مفتاح التخزين
 // ============================================================
-function buildAlignmentPath(mushafId, reciterId) {
-    if (!mushafId || !reciterId) return null;
-    return `${mushafId}/${reciterId}`;
+function buildStorageKey(surahNum, mushafId, reciterId) {
+    const surahPadded = String(surahNum).padStart(3, '0');
+    return `miqat_alignment_${mushafId}_${reciterId}_${surahPadded}`;
+}
+
+// ============================================================
+// بناء رابط GitHub
+// ============================================================
+function buildGitHubUrl(surahNum, mushafId, reciterId) {
+    const surahPadded = String(surahNum).padStart(3, '0');
+    return `${GITHUB_BASE}/${GITHUB_ALIGNMENTS_PATH}/${mushafId}/${reciterId}/${surahPadded}.json`;
 }
 
 // ============================================================
 // 1. جلب توقيتات
 // ============================================================
 async function fetchAlignment(surahNum, mushafId, reciterId) {
-    const path = buildAlignmentPath(mushafId, reciterId);
-    const surahPadded = String(surahNum).padStart(3, '0');
-    
-    // URL جديد: /api/alignment/{mushaf_id}/{reciter_id}/{surah}
-    const url = `${SERVER_BASE_URL}/api/alignment/${path}/${surahPadded}`;
-    
     try {
-        console.log(`📥 جلب: ${path}/${surahPadded}`);
-        const response = await fetch(url);
+        const key = buildStorageKey(surahNum, mushafId, reciterId);
+        console.log(`📥 جلب: ${key}`);
         
-        if (!response.ok) {
-            return { status: 'error', message: `HTTP ${response.status}` };
+        // ============================================
+        // 1. جرّب localStorage أولاً (الأسرع)
+        // ============================================
+        const saved = localStorage.getItem(key);
+        
+        if (saved) {
+            const data = JSON.parse(saved);
+            console.log('📦 نتيجة: found (localStorage)');
+            return { status: 'found', data, source: 'local' };
         }
         
-        const result = await response.json();
-        console.log('📦 نتيجة:', result.status);
-        return result;
+        // ============================================
+        // 2. جرّب GitHub (فقط إذا كنا على GitHub Pages أو مضيف آخر)
+        // ============================================
+        const githubUrl = buildGitHubUrl(surahNum, mushafId, reciterId);
+        console.log(`🌐 جرّب GitHub: ${githubUrl}`);
+        
+        try {
+            const response = await fetch(githubUrl);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('📦 نتيجة: found (GitHub)');
+                
+                // احفظ في localStorage للسرعة
+                try {
+                    localStorage.setItem(key, JSON.stringify(data));
+                } catch (e) {
+                    console.warn('⚠️ فشل الحفظ في localStorage:', e);
+                }
+                
+                return { status: 'found', data, source: 'github' };
+            } else if (response.status === 404) {
+                console.log('📦 GitHub: غير موجود (404)');
+            } else {
+                console.warn(`⚠️ GitHub: HTTP ${response.status}`);
+            }
+        } catch (e) {
+            console.log('⚠️ تعذّر الاتصال بـ GitHub:', e.message);
+        }
+        
+        // ============================================
+        // 3. لا يوجد
+        // ============================================
+        console.log('📦 نتيجة: not_found');
+        return { status: 'not_found' };
         
     } catch (error) {
         console.error('❌ خطأ:', error);
@@ -53,30 +95,19 @@ async function fetchAlignment(surahNum, mushafId, reciterId) {
 // 2. حفظ توقيتات
 // ============================================================
 async function saveAlignment(surahNum, mushafId, reciterId, alignmentData) {
-    const path = buildAlignmentPath(mushafId, reciterId);
-    const surahPadded = String(surahNum).padStart(3, '0');
-    
-    // URL جديد
-    const url = `${SERVER_BASE_URL}/api/alignment/${path}/${surahPadded}`;
-    
     try {
-        console.log(`💾 حفظ: ${path}/${surahPadded}`);
+        const key = buildStorageKey(surahNum, mushafId, reciterId);
+        console.log(`💾 حفظ: ${key}`);
         
         alignmentData.updated_at = new Date().toISOString();
         
-        const response = await fetch(url, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(alignmentData)
-        });
+        localStorage.setItem(key, JSON.stringify(alignmentData));
         
-        if (!response.ok) {
-            return { status: 'error', message: `HTTP ${response.status}` };
-        }
-        
-        const result = await response.json();
-        console.log('✅ تم الحفظ:', result.path);
-        return result;
+        console.log('✅ تم الحفظ في localStorage');
+        return {
+            status: 'saved',
+            path: key
+        };
         
     } catch (error) {
         console.error('❌ خطأ:', error);
@@ -84,55 +115,211 @@ async function saveAlignment(surahNum, mushafId, reciterId, alignmentData) {
     }
 }
 
-// تصدير
-window.buildAlignmentPath = buildAlignmentPath;
-
 // ============================================================
-// 3. قائمة التوقيتات المتاحة
+// 3. قائمة كل التوقيتات
 // ============================================================
 async function listAlignments() {
-    const url = `${SERVER_BASE_URL}/api/alignment-list`;
-    
     try {
-        const response = await fetch(url);
-        const result = await response.json();
-        console.log(`📋 التوقيتات المتاحة: ${result.total}`);
-        return result;
+        const items = [];
+        
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('miqat_alignment_')) {
+                items.push({ key });
+            }
+        }
+        
+        return { total: items.length, items };
+        
     } catch (error) {
-        console.error('❌ خطأ في جلب القائمة:', error);
         return { total: 0, items: [] };
     }
 }
 
 // ============================================================
-// 4. تحقق من وجود رابط صوت
+// 4. تصدير JSON
+// ============================================================
+async function exportAlignment(surahNum, mushafId, reciterId) {
+    const result = await fetchAlignment(surahNum, mushafId, reciterId);
+    
+    if (result.status !== 'found') {
+        return { status: 'error', message: 'لا توجد توقيتات' };
+    }
+    
+    const json = JSON.stringify(result.data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${mushafId}_${reciterId}_${String(surahNum).padStart(3, '0')}.json`;
+    a.click();
+    
+    URL.revokeObjectURL(url);
+    
+    return { status: 'exported' };
+}
+
+// ============================================================
+// 5. استيراد JSON
+// ============================================================
+async function importAlignment(jsonFile) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        
+        reader.onload = async (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                
+                if (!data.mushaf_id || !data.reciter_id || !data.surah_id) {
+                    resolve({ status: 'error', message: 'الملف غير صالح' });
+                    return;
+                }
+                
+                const result = await saveAlignment(
+                    data.surah_id,
+                    data.mushaf_id,
+                    data.reciter_id,
+                    data
+                );
+                
+                resolve(result);
+                
+            } catch (error) {
+                resolve({ status: 'error', message: error.message });
+            }
+        };
+        
+        reader.readAsText(jsonFile);
+    });
+}
+
+// ============================================================
+// 6. تصدير كل التوقيتات
+// ============================================================
+async function exportAllAlignments() {
+    const all = {};
+    
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('miqat_alignment_')) {
+            try {
+                all[key] = JSON.parse(localStorage.getItem(key));
+            } catch (e) {}
+        }
+    }
+    
+    const json = JSON.stringify(all, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `miqat_all_${Date.now()}.json`;
+    a.click();
+    
+    URL.revokeObjectURL(url);
+    
+    return { status: 'exported', count: Object.keys(all).length };
+}
+
+// ============================================================
+// 7. استيراد كل التوقيتات
+// ============================================================
+async function importAllAlignments(jsonFile) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                let count = 0;
+                
+                Object.keys(data).forEach(key => {
+                    if (key.startsWith('miqat_alignment_')) {
+                        localStorage.setItem(key, JSON.stringify(data[key]));
+                        count++;
+                    }
+                });
+                
+                resolve({ status: 'imported', count });
+                
+            } catch (error) {
+                resolve({ status: 'error', message: error.message });
+            }
+        };
+        
+        reader.readAsText(jsonFile);
+    });
+}
+
+// ============================================================
+// 8. حذف كل التوقيتات
+// ============================================================
+async function clearAllAlignments() {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('miqat_alignment_')) {
+            keys.push(key);
+        }
+    }
+    
+    keys.forEach(key => localStorage.removeItem(key));
+    
+    console.log(`🗑️ تم حذف ${keys.length} توقيت`);
+    return { deleted: keys.length };
+}
+
+// ============================================================
+// 9. تحقق من رابط صوت
 // ============================================================
 async function verifyAudioUrl(url) {
     try {
         const response = await fetch(url, { method: 'HEAD' });
-        if (!response.ok) {
-            return { status: 'error', message: `HTTP ${response.status}` };
-        }
-        
-        const size = response.headers.get('Content-Length');
-        const contentType = response.headers.get('Content-Type');
-        
-        return {
-            status: 'ok',
-            size: size ? parseInt(size) : null,
-            contentType: contentType
-        };
+        return response.ok 
+            ? { status: 'ok' }
+            : { status: 'error', message: `HTTP ${response.status}` };
     } catch (error) {
         return { status: 'error', message: error.message };
     }
 }
 
 // ============================================================
+// 10. جلب قائمة التوقيتات المتاحة على GitHub
+// ============================================================
+async function listGitHubAlignments() {
+    try {
+        const url = `${GITHUB_BASE}/data/alignments/index.json`;
+        const response = await fetch(url);
+        
+        if (response.ok) {
+            return await response.json();
+        }
+        
+        return { total: 0, items: [] };
+    } catch (error) {
+        console.warn('⚠️ فشل جلب قائمة GitHub:', error);
+        return { total: 0, items: [] };
+    }
+}
+
+// ============================================================
 // تصدير
 // ============================================================
+window.GITHUB_BASE = GITHUB_BASE;
+window.buildAlignmentPath = buildStorageKey;
+window.buildGitHubUrl = buildGitHubUrl;
 window.fetchAlignment = fetchAlignment;
 window.saveAlignment = saveAlignment;
 window.listAlignments = listAlignments;
 window.verifyAudioUrl = verifyAudioUrl;
+window.clearAllAlignments = clearAllAlignments;
+window.exportAlignment = exportAlignment;
+window.importAlignment = importAlignment;
+window.exportAllAlignments = exportAllAlignments;
+window.importAllAlignments = importAllAlignments;
+window.listGitHubAlignments = listGitHubAlignments;
 
-console.log('✅ server-client.js محمّل');
+console.log('✅ server-client.js محمّل (localStorage + GitHub mode)');
+console.log(`   🌐 GitHub base: ${GITHUB_BASE}`);
