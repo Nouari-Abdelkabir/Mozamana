@@ -385,7 +385,7 @@ body.dark-mode .audio-section {
 
 .btn-compact {
     height: 32px;
-    padding: 0 12px;
+    padding: 0 45px;
     border-radius: 8px;
     border: none;
     display: flex;
@@ -1130,4 +1130,107 @@ button {
 .speed-option.active {
     background: var(--primary);
     color: white;
+}
+
+/* ============================================================
+   📊 شريط التقسيمات (بدل الموجة)
+   ============================================================ */
+.segments-bar {
+    width: 100%;
+    background: var(--bg-input);
+    border-radius: 8px;
+    padding: 8px 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    position: relative;
+    min-height: 60px;
+}
+
+.segments-bar::-webkit-scrollbar {
+    height: 6px;
+}
+
+.segments-bar::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 3px;
+}
+
+.segments-track {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    min-height: 40px;
+    padding: 0 4px;
+    position: relative;
+}
+
+/* كل قسم = آية */
+.segment {
+    height: 40px;
+    background: linear-gradient(180deg, #10b981, #065F46);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+    position: relative;
+    min-width: 2px;
+}
+
+.segment:hover {
+    background: linear-gradient(180deg, #34d399, #059669);
+    transform: translateY(-2px);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+/* القسم النشط (يُشغّل حالياً) */
+.segment.active {
+    background: linear-gradient(180deg, #fbbf24, #d97706);
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
+    transform: translateY(-2px);
+}
+
+/* القسم المثبّت (تم قطعه) */
+.segment.fixed {
+    background: linear-gradient(180deg, #0ea5e9, #0369a1);
+}
+
+/* القسم المثبّت والنشط */
+.segment.fixed.active {
+    background: linear-gradient(180deg, #fbbf24, #d97706);
+}
+
+/* خط المؤشر الحالي */
+.segment-cursor {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #ef4444;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+    pointer-events: none;
+    transition: left 0.05s linear;
+    z-index: 10;
+}
+
+/* رقم الآية فوق كل قسم (يظهر عند hover) */
+.segment::before {
+    content: attr(data-ayah);
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--text-muted);
+    background: var(--bg-card);
+    padding: 2px 6px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    white-space: nowrap;
+    pointer-events: none;
+    border: 1px solid var(--border-color);
+}
+
+.segment:hover::before {
+    opacity: 1;
 }
