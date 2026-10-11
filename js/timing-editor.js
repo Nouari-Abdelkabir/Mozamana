@@ -182,6 +182,10 @@ function updateTimingPanel() {
     }
     // زر الحفظ
     updateSaveStatus();
+    // ✅ أعد رسم الأقسام
+    if (window.redrawSegments) {
+        setTimeout(redrawSegments, 50);
+    }
 }
 
 // ============================================================
@@ -205,17 +209,24 @@ function updateSaveStatus() {
 // ============================================================
 function cutHere() {
     console.log('✂️ cutHere بدأ');
-    console.log('  ViewerState.wavesurfer:', !!ViewerState.wavesurfer);
     console.log('  TimingState.currentIndex:', TimingState.currentIndex);
     console.log('  TimingState.ayahs.length:', TimingState.ayahs.length);
     
-    if (!ViewerState.wavesurfer) {
-        console.warn('⚠️ لا يوجد wavesurfer');
+    // ✅ دعم المشغل البسيط + WaveSurfer
+    let currentTime = 0;
+    if (ViewerState.simpleAudio) {
+        currentTime = ViewerState.simpleAudio.currentTime;
+    } else if (ViewerState.wavesurfer) {
+        currentTime = ViewerState.wavesurfer.getCurrentTime();
+    } else {
+        console.warn('⚠️ لا يوجد مشغل صوت');
         return;
     }
     
-    const currentTime = ViewerState.wavesurfer.getCurrentTime();
+    console.log('  currentTime:', currentTime);
+    
     const current = TimingState.ayahs[TimingState.currentIndex];
+    
     
     console.log('  currentTime:', currentTime);
     console.log('  current:', current);
@@ -267,16 +278,15 @@ function cutHere() {
 
 
 // ============================================================
-// إعادة توزيع الايات غير المثبّتة
+// إعادة توزيع الايات غير المثبّتة — بالنسب
 // ============================================================
 function redistributeRemaining() {
-    // ابحث عن أول اية غير مثبّتة بعد الحالية
     const startIdx = TimingState.currentIndex + 1;
     
-    // احسب وقت البداية (من نهاية اخر اية مثبّتة)
+    // نهاية التوزيع: من نهاية آخر آية مثبتة
     let startTime = TimingState.ayahs[startIdx - 1].end;
     
-    // ابحث عن أول اية مثبّتة بعد startIdx (لن نلمسها)
+    // ابحث عن أول آية مثبتة بعد startIdx
     let endIdx = TimingState.ayahs.length;
     for (let i = startIdx; i < TimingState.ayahs.length; i++) {
         if (TimingState.ayahs[i].fixed) {
@@ -285,7 +295,6 @@ function redistributeRemaining() {
         }
     }
     
-    // الوقت المتاح للتوزيع
     const endTime = endIdx < TimingState.ayahs.length 
         ? TimingState.ayahs[endIdx].start 
         : TimingState.audioDuration;
@@ -293,15 +302,52 @@ function redistributeRemaining() {
     const count = endIdx - startIdx;
     if (count <= 0) return;
     
-    const timePerAyah = (endTime - startTime) / count;
+    const totalTime = endTime - startTime;
     
-    // وزّع بالتساوي
+    // ============================================
+    // 1. احسب عدد الكلمات لكل آية
+    // ============================================
+    const wordCounts = [];
+    let totalWords = 0;
+    
     for (let i = startIdx; i < endIdx; i++) {
-        TimingState.ayahs[i].start = parseFloat((startTime + (i - startIdx) * timePerAyah).toFixed(2));
-        TimingState.ayahs[i].end = parseFloat((startTime + (i - startIdx + 1) * timePerAyah).toFixed(2));
+        const ayah = TimingState.ayahs[i];
+        const el = document.querySelector(`.quran-ayah[data-ayah-id="${ayah.ayah_number}"]`);
+        
+        let wc = 1;
+        if (el) {
+            const words = el.querySelectorAll('.quran-word');
+            wc = Math.max(1, words.length);
+        }
+        
+        wordCounts.push(wc);
+        totalWords += wc;
     }
     
-    console.log(`🔄 أُعيد توزيع ${count} اية على ${(endTime - startTime).toFixed(2)}s`);
+    // ============================================
+    // 2. وزّع حسب النسبة
+    // ============================================
+    let t = startTime;
+    
+    for (let i = startIdx; i < endIdx; i++) {
+        const localIdx = i - startIdx;
+        const percent = wordCounts[localIdx] / totalWords;
+        const duration = totalTime * percent;
+        
+        TimingState.ayahs[i].start = parseFloat(t.toFixed(2));
+        TimingState.ayahs[i].end = parseFloat((t + duration).toFixed(2));
+        
+        t += duration;
+    }
+    
+    // تصحيح آخر آية لتطابق النهاية
+    if (count > 0) {
+        TimingState.ayahs[endIdx - 1].end = parseFloat(endTime.toFixed(2));
+    }
+    
+    console.log(`🔄 أُعيد توزيع ${count} آية على ${totalTime.toFixed(2)}s (بالنسب)`);
+    console.log(`   📊 الكلمات:`, wordCounts);
+    console.log(`   ⏱️ المدة: ${totalTime.toFixed(2)}s / ${totalWords} كلمة = ${(totalTime/totalWords).toFixed(3)}s لكل كلمة`);
 }
 
 // ============================================================
@@ -343,21 +389,24 @@ function markDirtyAndSave() {
         saveTimingToServer();
     }, 2000);
 }
+// ✅ إعادة رسم الأقسام
+function redrawSegments() {
+    if (window.showSegmentsBar && ViewerState.audioDuration) {
+        showSegmentsBar(ViewerState.audioDuration);
+    }
+}
 
 async function saveTimingToServer() {
-    // ✅ تحقق من الحالة
     if (!UIState.currentMushafId || !UIState.currentReciterId || !UIState.currentSurahNum) {
-        console.warn('⚠️ بيانات ناقصة');
         return { status: 'error', message: 'بيانات ناقصة' };
     }
     
-    // ✅ بناء بيانات الحفظ
     const reciter = MUSHAAFS[UIState.currentMushafId]?.reciters.find(r => r.id === UIState.currentReciterId);
     
     const alignmentData = {
         surah_id: parseInt(UIState.currentSurahNum),
         mushaf_id: UIState.currentMushafId,
-        reciter_id: UIState.currentReciterId,                          // ← ✅ جديد!
+        reciter_id: UIState.currentReciterId,
         reciter_code: UIState.currentReciterCode,
         reciter_name: reciter?.name || '',
         audio_url: buildAudioUrl(UIState.currentReciterCode, UIState.currentSurahNum),
@@ -371,15 +420,13 @@ async function saveTimingToServer() {
         }))
     };
     
-    // ✅ حفظ باستخدام reciterId (النظيف)
     const result = await saveAlignment(
         UIState.currentSurahNum,
         UIState.currentMushafId,
-        UIState.currentReciterId,                                      // ← ✅ الصحيح!
+        UIState.currentReciterId,
         alignmentData
     );
     
-    // ✅ تحديث الحالة
     if (result.status === 'saved') {
         TimingState.isDirty = false;
         updateSaveStatus();
@@ -389,7 +436,6 @@ async function saveTimingToServer() {
         showSaveNotification('❌ فشل الحفظ', 'error');
     }
     
-    // ✅ إعادة النتيجة (مهم!)
     return result;
 }
 
@@ -438,15 +484,39 @@ function goToPrevAyah() {
     TimingState.currentIndex--;
     const current = TimingState.ayahs[TimingState.currentIndex];
     
-    // حدّث اللوحة
     updateTimingPanel();
     updateHighlightFromTiming();
     
-    // انقل الصوت + شغّل
-    if (ViewerState.wavesurfer && current) {
+    // ✅ دعم المشغل البسيط
+    if (ViewerState.simpleAudio && current) {
+        ViewerState.simpleAudio.currentTime = current.start;
+        ViewerState.simpleAudio.play();
+        console.log(`⏪ السابقة → الآية ${current.ayah_number}`);
+    } else if (ViewerState.wavesurfer && current) {
         ViewerState.wavesurfer.setTime(current.start);
         ViewerState.wavesurfer.play();
-        console.log(`⏪ السابقة → الاية ${current.ayah_number}`);
+        console.log(`⏪ السابقة → الآية ${current.ayah_number}`);
+    }
+}
+
+function goToNextAyah() {
+    if (TimingState.currentIndex >= TimingState.ayahs.length - 1) return;
+    
+    TimingState.currentIndex++;
+    const current = TimingState.ayahs[TimingState.currentIndex];
+    
+    updateTimingPanel();
+    updateHighlightFromTiming();
+    
+    // ✅ دعم المشغل البسيط
+    if (ViewerState.simpleAudio && current) {
+        ViewerState.simpleAudio.currentTime = current.start;
+        ViewerState.simpleAudio.play();
+        console.log(`⏩ التالية → الآية ${current.ayah_number}`);
+    } else if (ViewerState.wavesurfer && current) {
+        ViewerState.wavesurfer.setTime(current.start);
+        ViewerState.wavesurfer.play();
+        console.log(`⏩ التالية → الآية ${current.ayah_number}`);
     }
 }
 
@@ -604,7 +674,10 @@ function showTimingPanel(hasAlignment) {
 // ▶️ بدء المعاينة
 // ============================================================
 function startPreview() {
-    if (!ViewerState.wavesurfer) {
+    // ✅ دعم المشغل البسيط
+    const player = ViewerState.simpleAudio || ViewerState.wavesurfer;
+    
+    if (!player) {
         alert('الصوت غير محمل');
         return;
     }
@@ -614,35 +687,31 @@ function startPreview() {
         return;
     }
     
-    // 1. حوّل إلى وضع المعاينة
     TimingState.mode = 'preview';
-    console.log('▶️ بدء المعاينة من الاية', TimingState.currentIndex + 1);
+    console.log('▶️ بدء المعاينة من الآية', TimingState.currentIndex + 1);
     
-    // 2. أظهر شريط المعاينة
     const previewBar = document.getElementById('preview-mode-bar');
     if (previewBar) previewBar.classList.remove('hidden');
     
-    // 3. عطّل زر [✂️] مؤقتاً
     const cutBtn = document.getElementById('cut-btn');
     if (cutBtn) {
         cutBtn.disabled = true;
         cutBtn.classList.add('opacity-50', 'cursor-not-allowed');
     }
     
-    // 4. انتقل لبداية الاية الحالية + شغّل
+    // ✅ ابدأ من الآية الحالية
     const current = TimingState.ayahs[TimingState.currentIndex];
     if (current) {
-        ViewerState.wavesurfer.setTime(current.start);
-        ViewerState.wavesurfer.play();
+        if (ViewerState.simpleAudio) {
+            ViewerState.simpleAudio.currentTime = current.start;
+            ViewerState.simpleAudio.play();
+        } else {
+            ViewerState.wavesurfer.setTime(current.start);
+            ViewerState.wavesurfer.play();
+        }
     }
     
-    // 5. ربط مستمع انتهاء التشغيل
-    ViewerState.wavesurfer.once('finish', () => {
-        console.log('✅ انتهت المعاينة');
-        stopPreview();
-    });
-    
-    // 6. ربط فاحص دوري للتقدم
+    // ✅ مراقبة التقدم
     startPreviewMonitor();
 }
 
@@ -651,31 +720,29 @@ function startPreview() {
 // ============================================================
 function stopPreview() {
     TimingState.mode = 'edit';
-    console.log('⏹️ إيقاف المعاينة — العودة لوضع التحرير');
+    console.log('⏹️ إيقاف المعاينة');
     
-    // 1. أخفِ شريط المعاينة
     const previewBar = document.getElementById('preview-mode-bar');
     if (previewBar) previewBar.classList.add('hidden');
     
-    // 2. أعِد تفعيل زر [✂️]
     const cutBtn = document.getElementById('cut-btn');
     if (cutBtn) {
         cutBtn.disabled = false;
         cutBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     }
     
-    // 3. أوقف الصوت
-    if (ViewerState.wavesurfer) {
+    // ✅ دعم المشغل البسيط
+    if (ViewerState.simpleAudio) {
+        ViewerState.simpleAudio.pause();
+    } else if (ViewerState.wavesurfer) {
         ViewerState.wavesurfer.pause();
     }
     
-    // 4. أوقف الفاحص
     if (window._previewMonitor) {
         clearInterval(window._previewMonitor);
         window._previewMonitor = null;
     }
     
-    // 5. أعد التظليل للاية الحالية في وضع التحرير
     updateHighlightFromTiming();
     updateTimingPanel();
 }

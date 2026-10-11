@@ -13,11 +13,12 @@
 // ============================================================
 const UIState = {
     currentMushafId: null,
-    currentReciterId: null,        // ← جديد
+    currentReciterId: null,
     currentReciterCode: null,
     currentSurahNum: null,
     currentSourceType: 'server',
     currentLocalFile: null,
+    currentLocalAudioBuffer: null,   // ← جديد (ArrayBuffer)
     surahsData: [],
     currentAlignment: null
 };
@@ -134,7 +135,9 @@ async function updateAlignmentStatus() {
     const statusBox = document.getElementById('alignment-status');
     if (!statusBox) return;
     
-    // حالة: لم يتم الاختيار
+    // ============================================
+    // حالة 1: لم يتم الاختيار
+    // ============================================
     if (!UIState.currentMushafId || !UIState.currentReciterCode || !UIState.currentSurahNum) {
         statusBox.innerHTML = `
             <div class="text-slate-500 text-sm">
@@ -146,12 +149,30 @@ async function updateAlignmentStatus() {
         return;
     }
     
-    // مرّر بيانات الحالة إلى ViewerState
+    // ============================================
+    // حالة 2: مصدر محلي بدون ملف
+    // ============================================
+    if (UIState.currentSourceType === 'local' && !UIState.currentLocalFile) {
+        statusBox.innerHTML = `
+            <div class="text-amber-400 text-sm flex items-center gap-2">
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                اختر ملفاً صوتياً من جهازك
+            </div>
+        `;
+        lucide.createIcons();
+        return;
+    }
+    
+    // ============================================
+    // تمرير البيانات إلى ViewerState
+    // ============================================
     ViewerState.currentMushafId = UIState.currentMushafId;
     ViewerState.currentReciterCode = UIState.currentReciterCode;
     ViewerState.currentSurah = UIState.currentSurahNum;
     
-    // حالة: جاري البحث
+    // ============================================
+    // حالة 3: جاري البحث
+    // ============================================
     statusBox.innerHTML = `
         <div class="text-amber-400 text-sm flex items-center gap-2">
             <div class="animate-spin w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full"></div>
@@ -159,30 +180,20 @@ async function updateAlignmentStatus() {
         </div>
     `;
     
-    // 1. اعرض النص القراني أولاً
-    ViewerState.currentAlignment = null;
-    await displayQuranText(UIState.currentMushafId, UIState.currentSurahNum);
-    bindPlayerButtons();
-    
-    // 2. ابحث عن التوقيتات
+    // ============================================
+    // ابحث عن التوقيتات
+    // ============================================
     const result = await fetchAlignment(
         UIState.currentSurahNum,
         UIState.currentMushafId,
         UIState.currentReciterId
     );
-        
+    
     // ============================================
     // الحالة (أ): التوقيتات موجودة
     // ============================================
     if (result.status === 'found') {
         UIState.currentAlignment = result.data;
-        
-        // حمّل التوقيتات في المحرر
-        if (window.initTiming) {
-            initTiming(result.data);
-            showTimingPanel(true);
-            updateTimingPanel();
-        }
         
         const ayahsCount = result.data.ayahs?.length || 0;
         const updatedAt = result.data.updated_at 
@@ -196,8 +207,8 @@ async function updateAlignmentStatus() {
                     التوقيتات محفوظة ✅
                 </div>
                 <div class="text-xs text-slate-400 space-y-1">
-                    <div>عدد الايات: ${ayahsCount}</div>
-                    <div>اخر تحديث: ${updatedAt}</div>
+                    <div>عدد الآيات: ${ayahsCount}</div>
+                    <div>آخر تحديث: ${updatedAt}</div>
                 </div>
                 <button id="load-alignment-btn" 
                     class="w-full mt-2 bg-emerald-500 hover:bg-emerald-400 text-white text-sm py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
@@ -207,26 +218,57 @@ async function updateAlignmentStatus() {
             </div>
         `;
         
-        // ربط زر العرض
-        document.getElementById('load-alignment-btn').onclick = async () => {
-            ViewerState.currentMushafId = UIState.currentMushafId;
-            ViewerState.currentReciterCode = UIState.currentReciterCode;
-            ViewerState.currentSurah = UIState.currentSurahNum;
-            
-            await displayAlignment(result.data);
-            
-            // أظهر لوحة التحكم
-            if (window.initTiming) {
-                initTiming(result.data);
-                showTimingPanel(true);
-                updateTimingPanel();
-            }
-        };
+        // ✅ ربط زر "عرض التوقيتات"
+        const loadBtn = document.getElementById('load-alignment-btn');
+        if (loadBtn) {
+            loadBtn.onclick = async () => {
+                console.log('🖱️ نقر على [عرض التوقيتات]');
+                
+                // 1. اضبط الحالة
+                ViewerState.currentMushafId = UIState.currentMushafId;
+                ViewerState.currentReciterCode = UIState.currentReciterCode;
+                ViewerState.currentSurah = UIState.currentSurahNum;
+                ViewerState.currentAlignment = result.data;
+                
+                // 2. اعرض النص + الصوت
+                await displayAlignment(result.data);
+                
+                // 3. حمّل التوقيتات في المحرر
+                if (window.initTiming) {
+                    initTiming(result.data);
+                    showTimingPanel(true);
+                    updateTimingPanel();
+                }
+                
+                console.log('✅ تم عرض التوقيتات');
+            };
+        }
         
+        lucide.createIcons();
+        return;
+    }
+    
     // ============================================
     // الحالة (ب): التوقيتات غير موجودة
     // ============================================
-    } else if (result.status === 'not_found') {
+    if (result.status === 'not_found') {
+        // ✅ اعرض النص + الصوت أولاً
+        await displayQuranText(UIState.currentMushafId, UIState.currentSurahNum);
+        
+        // جهّز الصوت
+                // جهّز الصوت
+        if (UIState.currentSourceType === 'local' && UIState.currentLocalAudioBuffer) {
+            initWavesurfer(UIState.currentLocalAudioBuffer, true);
+        } else if (ViewerState.currentReciterCode) {
+            const audioUrl = buildAudioUrl(ViewerState.currentReciterCode, UIState.currentSurahNum);
+            if (audioUrl) initWavesurfer(audioUrl, false);
+        }
+        
+        // أخفِ لوحة التوقيتات (لأنها لا توجد)
+        if (window.showTimingPanel) {
+            showTimingPanel(false);
+        }
+        
         statusBox.innerHTML = `
             <div class="space-y-2">
                 <div class="flex items-center gap-2 text-amber-400 text-sm">
@@ -244,145 +286,178 @@ async function updateAlignmentStatus() {
             </div>
         `;
         
-        // اعرض زر "بدء الضبط اليدوي" في بطاقة المشغل
-        if (window.showTimingPanel) {
-            showTimingPanel(false);
+        // ✅ ربط زر "توليد التوقيتات"
+        const genBtn = document.getElementById('generate-alignment-btn');
+        if (genBtn) {
+            genBtn.onclick = async () => {
+                await generateAlignment();
+            };
         }
         
-        // ربط زر التوليد
-        document.getElementById('generate-alignment-btn').onclick = async () => {
-        console.log('⚡ بدء توليد التوقيتات...');
-        
-        // 1. تحقق من وجود wavesurfer
-        if (!ViewerState.wavesurfer) {
-            alert('يرجى انتظار تحميل الصوت أولاً');
-            return;
-        }
-        
-        // 2. انتظر حتى ينتهي تحميل الصوت
-        console.log('⏳ انتظار تحميل الصوت...');
-        let duration = 0;
-        let attempts = 0;
-        
-        while (attempts < 50) {  // 5 ثوانٍ كحد أقصى
-            duration = ViewerState.wavesurfer.getDuration();
-            if (duration && duration > 0) break;
-            await new Promise(r => setTimeout(r, 100));
-            attempts++;
-        }
-        
-        if (!duration || duration === 0) {
-            alert('الصوت لم يُحمّل بعد. يرجى المحاولة بعد قليل.');
-            return;
-        }
-        
-        console.log(`✅ الصوت جاهز: ${duration.toFixed(2)}s`);
-        
-        // 3. تحقق من النص
-        const ayahElements = document.querySelectorAll('.quran-ayah');
-        const ayahCount = ayahElements.length;
-        
-        if (ayahCount === 0) {
-            alert('لا يوجد نص معروض');
-            return;
-        }
-        
-        // 4. توليد التوقيتات
-        const wordCounts = [];
-        let totalWords = 0;
-        
-        ayahElements.forEach((el) => {
-            const words = Array.from(el.querySelectorAll('.quran-word'));
-            const count = Math.max(1, words.length);
-            wordCounts.push(count);
-            totalWords += count;
-        });
-        
-        console.log(`📖 ${ayahCount} آية، ${totalWords} كلمة`);
-        
-        let currentTime = 0;
-        const ayahs = [];
-        
-        ayahElements.forEach((el, idx) => {
-            const percentage = wordCounts[idx] / totalWords;
-            const ayahDuration = duration * percentage;
-            
-            ayahs.push({
-                ayah_number: parseInt(el.dataset.ayahId),
-                start: parseFloat(currentTime.toFixed(2)),
-                end: parseFloat((currentTime + ayahDuration).toFixed(2)),
-                wordCount: wordCounts[idx],
-                confidence: 1.0,
-                manually_verified: false
-            });
-            
-            currentTime += ayahDuration;
-        });
-        
-        // تصحيح الأخير
-        if (ayahs.length > 0) {
-            ayahs[ayahs.length - 1].end = parseFloat(duration.toFixed(2));
-        }
-        
-        // 5. بناء JSON
-        const alignmentData = {
-            surah_id: parseInt(UIState.currentSurahNum),
-            mushaf_id: UIState.currentMushafId,
-            reciter_id: UIState.currentReciterId,
-            reciter_code: UIState.currentReciterCode,
-            reciter_name: (MUSHAAFS[UIState.currentMushafId]?.reciters.find(r => r.id === UIState.currentReciterId) || {}).name || '',
-            audio_url: buildAudioUrl(UIState.currentReciterCode, UIState.currentSurahNum),
-            audio_duration: parseFloat(duration.toFixed(2)),
-            generated_at: new Date().toISOString(),
-            ayahs: ayahs
-        };
-        
-        // 6. حفظ
-        const saveResult = await saveAlignment(
-            UIState.currentSurahNum,
-            UIState.currentMushafId,
-            UIState.currentReciterId,
-            alignmentData
-        );
-        
-        if (saveResult.status === 'saved') {
-            console.log('✅ تم الحفظ بنجاح:', saveResult.path);
-            
-            // اعرض التوقيتات
-            ViewerState.currentAlignment = alignmentData;
-            
-            // أظهر لوحة التحكم
-            if (window.initTiming) {
-                initTiming(alignmentData);
-                showTimingPanel(true);
-                updateTimingPanel();
-            }
-            
-            // حدّث الحالة
-            updateAlignmentStatus();
-        } else {
-            alert('❌ فشل الحفظ: ' + (saveResult.message || 'غير معروف'));
-        }
-    };
-            
+        lucide.createIcons();
+        return;
+    }
+    
     // ============================================
     // الحالة (ج): خطأ
     // ============================================
-    } else {
-        if (window.showTimingPanel) {
-            showTimingPanel(false);
-        }
-        
-        statusBox.innerHTML = `
-            <div class="text-red-400 text-sm">
-                <i data-lucide="x-circle" class="w-4 h-4 inline"></i>
-                خطأ: ${result.message || 'غير معروف'}
-            </div>
-        `;
+    if (window.showTimingPanel) {
+        showTimingPanel(false);
     }
     
+    statusBox.innerHTML = `
+        <div class="text-red-400 text-sm">
+            <i data-lucide="x-circle" class="w-4 h-4 inline"></i>
+            خطأ: ${result.message || 'غير معروف'}
+        </div>
+    `;
     lucide.createIcons();
 }
+// ============================================================
+// 6.5. توليد التوقيتات
+// ============================================================
+async function generateAlignment() {
+    console.log('⚡ بدء توليد التوقيتات...');
+    
+    // ✅ دعم المشغل البسيط + WaveSurfer
+    const audio = ViewerState.simpleAudio;
+    const wavesurfer = ViewerState.wavesurfer;
+    
+    if (!audio && !wavesurfer) {
+        alert('يرجى انتظار تحميل الصوت أولاً');
+        return;
+    }
+    
+    // ✅ احصل على المدة
+    let duration = 0;
+    
+    if (audio) {
+        // المشغل البسيط
+        duration = audio.duration;
+        if (!duration || isNaN(duration)) {
+            // انتظر metadata
+            let attempts = 0;
+            while ((!duration || isNaN(duration)) && attempts < 50) {
+                await new Promise(r => setTimeout(r, 100));
+                duration = audio.duration;
+                attempts++;
+            }
+        }
+    } else if (wavesurfer) {
+        // WaveSurfer
+        duration = wavesurfer.getDuration();
+        if (!duration || duration === 0) {
+            let attempts = 0;
+            while ((!duration || duration === 0) && attempts < 50) {
+                await new Promise(r => setTimeout(r, 100));
+                duration = wavesurfer.getDuration();
+                attempts++;
+            }
+        }
+    }
+    
+    if (!duration || duration === 0 || isNaN(duration)) {
+        alert('الصوت لم يُحمّل بعد. يرجى المحاولة بعد قليل.');
+        return;
+    }
+    
+    console.log(`✅ الصوت جاهز: ${duration.toFixed(2)}s`);
+    
+    // 3. تحقق من النص
+    const ayahElements = document.querySelectorAll('.quran-ayah');
+    const ayahCount = ayahElements.length;
+    
+    if (ayahCount === 0) {
+        alert('لا يوجد نص معروض');
+        return;
+    }
+    
+    // 4. توليد التوقيتات
+    const wordCounts = [];
+    let totalWords = 0;
+    
+    ayahElements.forEach((el) => {
+        const words = Array.from(el.querySelectorAll('.quran-word'));
+        const count = Math.max(1, words.length);
+        wordCounts.push(count);
+        totalWords += count;
+    });
+    
+    console.log(`📖 ${ayahCount} آية، ${totalWords} كلمة`);
+    
+    let currentTime = 0;
+    const ayahs = [];
+    
+    ayahElements.forEach((el, idx) => {
+        const percentage = wordCounts[idx] / totalWords;
+        const ayahDuration = duration * percentage;
+        
+        ayahs.push({
+            ayah_number: parseInt(el.dataset.ayahId),
+            start: parseFloat(currentTime.toFixed(2)),
+            end: parseFloat((currentTime + ayahDuration).toFixed(2)),
+            wordCount: wordCounts[idx],
+            confidence: 1.0,
+            manually_verified: false
+        });
+        
+        currentTime += ayahDuration;
+    });
+    
+    if (ayahs.length > 0) {
+        ayahs[ayahs.length - 1].end = parseFloat(duration.toFixed(2));
+    }
+    
+    // 5. بناء JSON
+    const alignmentData = {
+        surah_id: parseInt(UIState.currentSurahNum),
+        mushaf_id: UIState.currentMushafId,
+        reciter_id: UIState.currentReciterId,
+        reciter_code: UIState.currentReciterCode,
+        reciter_name: (MUSHAAFS[UIState.currentMushafId]?.reciters.find(r => r.id === UIState.currentReciterId) || {}).name || '',
+        audio_url: UIState.currentSourceType === 'local' 
+            ? 'local-file'
+            : buildAudioUrl(UIState.currentReciterCode, UIState.currentSurahNum),
+        audio_duration: parseFloat(duration.toFixed(2)),
+        generated_at: new Date().toISOString(),
+        source_type: UIState.currentSourceType,
+        ayahs: ayahs
+    };
+    
+    // 6. حفظ
+    const saveResult = await saveAlignment(
+        UIState.currentSurahNum,
+        UIState.currentMushafId,
+        UIState.currentReciterId,
+        alignmentData
+    );
+    
+    if (saveResult.status === 'saved') {
+        console.log('✅ تم الحفظ:', saveResult.path);
+        
+        ViewerState.currentAlignment = alignmentData;
+        
+        // أظهر لوحة التوقيتات
+        if (window.initTiming) {
+            initTiming(alignmentData);
+            showTimingPanel(true);
+            updateTimingPanel();
+        }
+        
+        // أعد رسم الأقسام
+        if (window.showSegmentsBar) {
+            showSegmentsBar(duration);
+        }
+        
+        // حدّث الحالة
+        await updateAlignmentStatus();
+    } else {
+        alert('❌ فشل الحفظ: ' + (saveResult.message || 'غير معروف'));
+    }
+}
+
+// تصدير
+window.generateAlignment = generateAlignment;
 
 // ============================================================
 // 7. ربط الأحداث
@@ -423,6 +498,7 @@ function bindUIEvents() {
     }
     
     // تبديل مصدر الصوت
+       // تبديل مصدر الصوت
     const serverTab = document.getElementById('source-server-tab');
     const localTab = document.getElementById('source-local-tab');
     
@@ -434,6 +510,7 @@ function bindUIEvents() {
             document.getElementById('panel-server')?.classList.remove('hidden');
             document.getElementById('panel-local')?.classList.add('hidden');
             updateAudioSourcePreview();
+            updateAlignmentStatus();   // ← جديد
         });
         
         localTab.addEventListener('click', () => {
@@ -443,18 +520,47 @@ function bindUIEvents() {
             document.getElementById('panel-server')?.classList.add('hidden');
             document.getElementById('panel-local')?.classList.remove('hidden');
             updateAudioSourcePreview();
+            updateAlignmentStatus();   // ← جديد
         });
     }
     
-    // رفع ملف محلي
+    
+        // رفع ملف محلي
     const localFileInput = document.getElementById('local-audio-file');
     if (localFileInput) {
-        localFileInput.addEventListener('change', (e) => {
+        localFileInput.addEventListener('change', async (e) => {
             UIState.currentLocalFile = e.target.files[0] || null;
             updateAudioSourcePreview();
+            
+            if (!UIState.currentLocalFile) return;
+            
+            console.log('📁 ملف محلي مختار:', UIState.currentLocalFile.name);
+            
+            // ✅ 1. حمّل الصوت كـ ArrayBuffer
+            try {
+                const arrayBuffer = await UIState.currentLocalFile.arrayBuffer();
+                console.log('🎵 تم قراءة الملف:', (arrayBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB');
+                
+                // احفظه للحالة
+                UIState.currentLocalAudioBuffer = arrayBuffer;
+                
+                if (window.initWavesurfer) {
+                    await initWavesurfer(arrayBuffer, true);
+                }
+            } catch (err) {
+                console.error('❌ فشل قراءة الملف:', err);
+            }
+            
+            // ✅ 2. تأكد من وجود اختيارات
+            if (!UIState.currentMushafId || !UIState.currentReciterId || !UIState.currentSurahNum) {
+                console.warn('⚠️ اختر الرواية والقارئ والسورة أولاً');
+                return;
+            }
+            
+            // ✅ 3. حدّث الحالة
+            await updateAlignmentStatus();
         });
     }
-    
     
     console.log('✅ تم ربط الأحداث');
         // ============================================
@@ -549,6 +655,56 @@ function bindUIEvents() {
             // أعد تحديث الحالة
             updateAlignmentStatus();
         });
+    }
+            // ============================================
+    // حفظ في مجلد alignments — يعمل دائماً
+    // ============================================
+    const saveToFolderBtn = document.getElementById('save-to-folder-btn');
+    if (saveToFolderBtn) {
+        saveToFolderBtn.onclick = async () => {
+            console.log('💾 نقر على [حفظ في مجلد]');
+            console.log('  mushafId:', UIState.currentMushafId);
+            console.log('  reciterId:', UIState.currentReciterId);
+            console.log('  surahNum:', UIState.currentSurahNum);
+            console.log('  sourceType:', UIState.currentSourceType);
+            
+            // ✅ التحقق من الاختيارات فقط (بغض النظر عن المصدر)
+            if (!UIState.currentMushafId || !UIState.currentReciterId || !UIState.currentSurahNum) {
+                alert('اختر الرواية والقارئ والسورة أولاً');
+                return;
+            }
+            
+            // ✅ التحقق من وجود التوقيتات في localStorage
+            const check = await fetchAlignment(
+                UIState.currentSurahNum,
+                UIState.currentMushafId,
+                UIState.currentReciterId
+            );
+            
+            if (check.status !== 'found') {
+                alert('❌ لا توجد توقيتات محفوظة لهذه السورة.\n\nاضغط "توليد التوقيتات" أولاً.');
+                return;
+            }
+            
+            // ✅ احفظ
+            const result = await saveToFolder(
+                UIState.currentSurahNum,
+                UIState.currentMushafId,
+                UIState.currentReciterId
+            );
+            
+            if (result.status === 'saved') {
+                console.log('✅ تم الحفظ:', result.path);
+                alert(`✅ تم الحفظ في:\n${result.path}`);
+            } else if (result.status === 'cancelled') {
+                console.log('⚠️ تم الإلغاء من قبل المستخدم');
+            } else {
+                alert(`❌ فشل الحفظ: ${result.message || 'غير معروف'}`);
+            }
+        };
+        console.log('✅ تم ربط زر [حفظ في مجلد]');
+    } else {
+        console.warn('⚠️ زر [حفظ في مجلد] غير موجود');
     }
     
 }

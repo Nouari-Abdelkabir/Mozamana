@@ -25,6 +25,15 @@ const ZOOM_LABELS = ['1x', '2x', '5x', '10x'];
 
 let currentSpeed = 1;
 
+
+// ============================================================
+// تحويل الأرقام إلى عربية
+// ============================================================
+function toArabicNumber(num) {
+    const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    return String(num).split('').map(d => arabicDigits[parseInt(d)] || d).join('');
+}
+
 // ============================================================
 // 1. عرض النص القرآني
 // ============================================================
@@ -86,10 +95,12 @@ async function displayQuranText(mushafId, surahNum) {
                 });
             }
             
-            if (ayah.id > 0) {
+           // ✅ أضف رقم الآية فقط إذا كانت آية حقيقية (ليس البسملة)
+            if (ayah.id > 0 && !ayah.isBasmala) {
                 const ayahNum = document.createElement('span');
-                ayahNum.className = 'text-emerald-500/60 font-Tajawal text-lg align-middle mx-4 select-none';
-                ayahNum.innerHTML = `&nbsp;﴿${ayah.id}﴾&nbsp;`;
+                ayahNum.className = 'text-emerald-500 font-Tajawal text-lg align-middle mx-4 select-none';
+                const arabicNum = toArabicNumber(ayah.id);
+                ayahNum.innerHTML = `&nbsp;${arabicNum}&nbsp;`;
                 ayahSpan.appendChild(ayahNum);
             }
             
@@ -111,146 +122,271 @@ async function displayQuranText(mushafId, surahNum) {
     }
     
     // تهيئة مشغل الصوت
-    if (ViewerState.currentReciterCode && ViewerState.currentSurah) {
-        const audioUrl = buildAudioUrl(
-            ViewerState.currentReciterCode, 
-            ViewerState.currentSurah
-        );
-        
-        if (audioUrl) {
-            console.log(`🎵 تهيئة الصوت: ${audioUrl}`);
-            initWavesurfer(audioUrl);
-        }
-    }
+      // ============================================
+    // تهيئة مشغل الصوت (حسب المصدر)
+    // ============================================
+     // ✅ لا نُهيّئ الصوت هنا — displayAlignment يتولى ذلك
 }
 
+
 // ============================================================
-// 2. تهيئة مشغل الصوت
+// 2. تهيئة المشغل — بدون WaveSurfer (خط بسيط)
 // ============================================================
-async function initWavesurfer(audioUrl) {
-    // ✅ تحقق من الرابط أولاً
-    console.log(`🔍 التحقق من الرابط: ${audioUrl}`);
+async function initWavesurfer(audioUrl, isLocal = false) {
+    console.log(`🎵 تهيئة الصوت: ${isLocal ? 'محلي' : 'سيرفر'}`);
     
-    try {
-        const response = await fetch(audioUrl, { method: 'HEAD' });
-        if (!response.ok) {
-            console.error(`❌ الرابط غير صالح: HTTP ${response.status}`);
-            console.error(`🔗 الرابط: ${audioUrl}`);
-            // اعرض تنبيهاً
-            alert(`⚠️ رابط الصوت غير متاح (HTTP ${response.status})\n\n${audioUrl}`);
-            return;
-        }
-        console.log('✅ الرابط صالح');
-    } catch (e) {
-        console.error('❌ فشل التحقق:', e.message);
-        alert(`⚠️ لا يمكن الوصول لرابط الصوت:\n${audioUrl}\n\n${e.message}`);
-        return;
+    // 1. احذف القديم
+    if (ViewerState.simpleAudio) {
+        try {
+            ViewerState.simpleAudio.pause();
+            ViewerState.simpleAudio.src = '';
+        } catch (e) {}
+        ViewerState.simpleAudio = null;
     }
     
-    // ✅ الآن، تدمير القديم بأمان
-    if (ViewerState.wavesurfer) {
-        try { 
-            ViewerState.wavesurfer.destroy(); 
-        } catch(e) {
-            console.warn('⚠️ فشل التدمير:', e.message);
-        }
+    ViewerState.wavesurfer = null;
+    
+    // 2. بناء المصدر
+    let src = audioUrl;
+    if (isLocal && audioUrl instanceof ArrayBuffer) {
+        const blob = new Blob([audioUrl], { type: 'audio/mpeg' });
+        src = URL.createObjectURL(blob);
     }
     
-    ViewerState.currentAudioUrl = audioUrl;
-    ViewerState.wavesurfer = WaveSurfer.create({
-        container: '#waveform',
-        waveColor: '#10b981',
-        progressColor: '#065F46',
-        cursorColor: '#B8860B',
-        barWidth: 2,
-        barGap: 3,
-        barRadius: 4,
-        height: 50,
-        normalize: true,
-    });
+    // 3. إنشاء audio بسيط
+    const audio = new Audio(src);
+    audio.preload = 'metadata';
+    ViewerState.simpleAudio = audio;
     
-    ViewerState.wavesurfer.load(audioUrl);
-    
-    // ✅ ربط أزرار الزوم والسرعة
-    bindZoomControls();
-    bindSpeedControls();
-    
-    const playerContainer = document.getElementById('audio-player-container');
-    if (playerContainer) playerContainer.classList.remove('hidden');
-    
-    const topPlayBtn = document.getElementById('top-play-pause-btn');
-    if (topPlayBtn) topPlayBtn.classList.remove('hidden');
-    
-    // عند الجاهزية
-    ViewerState.wavesurfer.on('ready', () => {
-        console.log('🎵 الصوت جاهز:', ViewerState.wavesurfer.getDuration(), 'ثانية');
-        updateDurationDisplay();
+    // 4. انتظر metadata
+    audio.onloadedmetadata = () => {
+        console.log(`🎵 الصوت جاهز: ${audio.duration.toFixed(2)} ثانية`);
         
-        // ✅ الآن يمكن تطبيق الزوم (الصوت محمّل)
-        applyZoom();
-    });
-    
-    // عند التشغيل
-    ViewerState.wavesurfer.on('play', () => {
-        updatePlayIcon(true);
-    });
-    
-    // عند الإيقاف
-    ViewerState.wavesurfer.on('pause', () => {
-        updatePlayIcon(false);
-    });
-    
-    // عند الانتهاء
-    ViewerState.wavesurfer.on('finish', () => {
-        updatePlayIcon(false);
-        clearHighlight();
-    });
-    
-    // تحديث الوقت
-    ViewerState.wavesurfer.on('timeupdate', (time) => {
-        updateTimeDisplay(time);
-        if (ViewerState.currentAlignment) {
-            updateHighlight(time);
-        }
-    });
-    
-    // ربط أزرار التشغيل
-    setTimeout(() => {
-        const playBtn = document.getElementById('play-pause-btn');
-        const topPlayBtn = document.getElementById('top-play-pause-btn');
+        ViewerState.currentAudioUrl = audioUrl;
+        ViewerState.isLocalFile = isLocal;
+        ViewerState.audioDuration = audio.duration;
         
-        if (playBtn) {
-            const newPlayBtn = playBtn.cloneNode(true);
-            playBtn.parentNode.replaceChild(newPlayBtn, playBtn);
-            
-            newPlayBtn.addEventListener('click', () => {
-                ViewerState.wavesurfer.playPause();
-            });
-        }
+        // ✅ اعرض شريط التقسيمات
+        showSegmentsBar(audio.duration);
         
-        if (topPlayBtn) {
-            const newTopBtn = topPlayBtn.cloneNode(true);
-            topPlayBtn.parentNode.replaceChild(newTopBtn, topPlayBtn);
-            
-            newTopBtn.addEventListener('click', () => {
-                ViewerState.wavesurfer.playPause();
-            });
-        }
-        
-        lucide.createIcons();
-    }, 100);
-    
-    // إظهار لوحة التوقيتات
-    setTimeout(() => {
+        // ✅ إظهار لوحة التوقيتات
         if (window.TimingState && TimingState.ayahs.length > 0) {
             if (window.showTimingPanel) {
                 showTimingPanel(true);
                 updateTimingPanel();
             }
         }
-    }, 300);
+        
+        // ✅ ربط أزرار التشغيل
+        bindSimplePlayerButtons(audio);
+    };
+    
+    // 5. تحديث الشريط أثناء التشغيل
+    audio.ontimeupdate = () => {
+        updateSegmentsCursor(audio.currentTime, audio.duration);
+        
+        // تحديث الشريط السفلي
+        const playerProgress = document.getElementById('player-progress');
+        if (playerProgress) {
+            playerProgress.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
+        }
+        
+        // تحديث الوقت
+        const currentTimeEl = document.getElementById('current-time');
+        if (currentTimeEl) currentTimeEl.textContent = formatTime(audio.currentTime);
+        
+        // ✅ التظليل التلقائي (في وضع المعاينة)
+        if (TimingState.mode === 'preview' && TimingState.ayahs.length > 0) {
+            for (let i = 0; i < TimingState.ayahs.length; i++) {
+                const a = TimingState.ayahs[i];
+                if (audio.currentTime >= a.start && audio.currentTime < a.end) {
+                    if (i !== TimingState.currentIndex) {
+                        TimingState.currentIndex = i;
+                        updateHighlightFromTiming();
+                        updateTimingPanel();
+                    }
+                    break;
+                }
+            }
+        }
+    };
+    
+    // 6. عند الانتهاء
+    audio.onended = () => {
+        updatePlayIcon(false);
+        updateSegmentsCursor(0, audio.duration);
+    };
+    
+     // 7. ربط أزرار الزوم
+    bindZoomControls();
+    
+    // ✅ أضف هذا السطر
+    bindSpeedControls();
+
+    // 8. أظهر الحاويات
+    const playerContainer = document.getElementById('audio-player-container');
+    if (playerContainer) playerContainer.classList.remove('hidden');
+    
+    const topPlayBtn = document.getElementById('top-play-pause-btn');
+    if (topPlayBtn) topPlayBtn.classList.remove('hidden');
 }
 
+// ============================================================
+// عرض شريط التقسيمات
+// ============================================================
+function showSegmentsBar(duration) {
+    const bar = document.getElementById('segments-bar');
+    const track = document.getElementById('segments-track');
+    const waveContainer = document.getElementById('waveform');
+    
+    if (!bar || !track) return;
+    
+    // ✅ أخفِ waveform، أظهر segments
+    if (waveContainer) waveContainer.classList.add('hidden');
+    bar.classList.remove('hidden');
+    
+    // ✅ امسح القديم
+    track.innerHTML = '';
+    
+    // ✅ إذا لم تكن هناك توقيتات، اعرض شريطاً واحداً
+    if (!TimingState.ayahs || TimingState.ayahs.length === 0) {
+        const seg = document.createElement('div');
+        seg.className = 'segment';
+        seg.style.width = '100%';
+        seg.style.flex = '1';
+        seg.dataset.ayah = 'كامل السورة';
+        track.appendChild(seg);
+        return;
+    }
+    
+    // ✅ ارسم قسماً لكل آية
+    const totalDuration = duration || TimingState.audioDuration;
+    const trackWidth = track.parentElement.offsetWidth - 16;
+    
+    TimingState.ayahs.forEach((ayah, idx) => {
+        const seg = document.createElement('div');
+        seg.className = 'segment';
+        seg.dataset.ayah = `آية ${ayah.ayah_number}`;
+        seg.dataset.index = idx;
+        
+        // العرض النسبي (بحسب المدة)
+         // ✅ العرض النسبي (بحسب المدة) — استخدم width وليس flex
+        const ayahDuration = ayah.end - ayah.start;
+        const widthPercent = (ayahDuration / totalDuration) * 100;
+        seg.style.width = `${widthPercent}%`;
+        seg.style.flexShrink = '0';
+        
+        // إذا كان مثبّتاً
+        if (ayah.fixed) {
+            seg.classList.add('fixed');
+        }
+        
+        // النقر → انتقال إلى الآية
+        seg.onclick = () => {
+            console.log(`👆 نقر على القسم ${idx + 1}`);
+            
+            if (ViewerState.simpleAudio) {
+                ViewerState.simpleAudio.currentTime = ayah.start;
+                ViewerState.simpleAudio.play();
+            }
+            
+            TimingState.currentIndex = idx;
+            updateHighlightFromTiming();
+            updateTimingPanel();
+        };
+        
+        track.appendChild(seg);
+    });
+    
+    // ✅ أضف مؤشر التقدم
+    const cursor = document.createElement('div');
+    cursor.className = 'segment-cursor';
+    cursor.id = 'segments-cursor';
+    cursor.style.left = '0';
+    cursor.style.top = '8px';
+    cursor.style.bottom = '8px';
+    cursor.style.height = 'auto';
+    track.appendChild(cursor);
+    
+    console.log(`✅ تم رسم ${TimingState.ayahs.length} قسم`);
+}
+
+// ============================================================
+// تحديث مؤشر التقدم
+// ============================================================
+function updateSegmentsCursor(currentTime, duration) {
+    const cursor = document.getElementById('segments-cursor');
+    const track = document.getElementById('segments-track');
+    
+    if (!cursor || !track) return;
+    
+    const percent = (currentTime / duration) * 100;
+    const trackWidth = track.offsetWidth;
+    cursor.style.left = `${(percent / 100) * trackWidth}px`;
+}
+
+// ============================================================
+// ربط أزرار التشغيل للمشغل البسيط
+// ============================================================
+function bindSimplePlayerButtons(audio) {
+    // زر التشغيل الرئيسي
+    const playBtn = document.getElementById('play-pause-btn');
+    const topPlayBtn = document.getElementById('top-play-pause-btn');
+    
+    if (playBtn) {
+        const newPlayBtn = playBtn.cloneNode(true);
+        playBtn.parentNode.replaceChild(newPlayBtn, playBtn);
+        
+        newPlayBtn.onclick = () => {
+            if (audio.paused) {
+                audio.play();
+                updatePlayIcon(true);
+            } else {
+                audio.pause();
+                updatePlayIcon(false);
+            }
+        };
+    }
+    
+    if (topPlayBtn) {
+        const newTopBtn = topPlayBtn.cloneNode(true);
+        topPlayBtn.parentNode.replaceChild(newTopBtn, topPlayBtn);
+        
+        newTopBtn.onclick = () => {
+            if (audio.paused) {
+                audio.play();
+                updatePlayIcon(true);
+            } else {
+                audio.pause();
+                updatePlayIcon(false);
+            }
+        };
+    }
+    
+    // زر السرعة
+    const speedOptions = document.querySelectorAll('.speed-option');
+    speedOptions.forEach(opt => {
+        const newOpt = opt.cloneNode(true);
+        opt.parentNode.replaceChild(newOpt, opt);
+        
+        newOpt.onclick = () => {
+            const speed = parseInt(newOpt.dataset.speed);
+            audio.playbackRate = speed === 0 ? 0.1 : speed;
+            
+            const label = document.getElementById('speed-label');
+            if (label) label.textContent = `${speed}x`;
+            
+            document.querySelectorAll('.speed-option').forEach(b => b.classList.remove('active'));
+            newOpt.classList.add('active');
+            
+            const menu = document.getElementById('speed-menu');
+            if (menu) menu.classList.add('hidden');
+        };
+    });
+    
+    lucide.createIcons();
+    updateDurationDisplay();
+}
 // ============================================================
 // 3. عرض التوقيتات المحفوظة
 // ============================================================
@@ -262,24 +398,34 @@ async function displayAlignment(alignmentData) {
     
     ViewerState.currentAlignment = alignmentData;
     
+    // ✅ 1. اعرض النص
     await displayQuranText(
         ViewerState.currentMushafId,
         ViewerState.currentSurah
     );
     
-    const audioUrl = alignmentData.audio_url || 
-        buildAudioUrl(ViewerState.currentReciterCode, ViewerState.currentSurah);
-    
-    if (audioUrl) {
-        initWavesurfer(audioUrl);
+    // ✅ 2. جهّز الصوت (من المصدر الصحيح)
+       // 2. جهّز الصوت
+    if (window.UIState && UIState.currentSourceType === 'local' && UIState.currentLocalAudioBuffer) {
+        // ✅ استخدم ArrayBuffer
+        console.log(`🎵 تهيئة الصوت المحلي (ArrayBuffer)`);
+        initWavesurfer(UIState.currentLocalAudioBuffer, true);
+    } else {
+        const audioUrl = alignmentData.audio_url || 
+            buildAudioUrl(ViewerState.currentReciterCode, ViewerState.currentSurah);
+        
+        if (audioUrl) {
+            console.log(`🎵 تهيئة الصوت من السيرفر: ${audioUrl}`);
+            initWavesurfer(audioUrl, false);
+        }
     }
     
+    // ✅ 3. أظهر قسم التصدير
     const exportContainer = document.getElementById('export-container');
     if (exportContainer) exportContainer.classList.remove('hidden');
     
     console.log(`✅ تم عرض التوقيتات (${alignmentData.ayahs.length} آية)`);
 }
-
 // ============================================================
 // 4. التظليل — معطّل (المستخدم يتحكم يدوياً)
 // ============================================================
@@ -312,7 +458,12 @@ function updateTimeDisplay(time) {
 
 function updateDurationDisplay() {
     const el = document.getElementById('duration');
-    if (el && ViewerState.wavesurfer) {
+    if (!el) return;
+    
+    // ✅ دعم المشغل البسيط
+    if (ViewerState.simpleAudio) {
+        el.textContent = formatTime(ViewerState.simpleAudio.duration);
+    } else if (ViewerState.wavesurfer) {
         el.textContent = formatTime(ViewerState.wavesurfer.getDuration());
     }
 }
@@ -410,23 +561,17 @@ function bindZoomControls() {
 }
 
 function applyZoom() {
-    const level = ZOOM_LEVELS[currentZoom];  // 1, 2, 5, 10
-    const pixelValue = level * 10;           // ← قيمة أقل (10, 20, 50, 100)
+    const level = ZOOM_LEVELS[currentZoom];
     
-    if (ViewerState.wavesurfer) {
+    if (ViewerState.wavesurfer && ViewerState.wavesurfer.getDuration() > 0) {
         try {
-            ViewerState.wavesurfer.zoom(pixelValue);
-        } catch (e) {
-            console.warn('⚠️ zoom failed:', e.message);
-        }
+            ViewerState.wavesurfer.zoom(level * 10);
+        } catch (e) {}
     }
     
     const label = document.getElementById('zoom-level');
     if (label) label.textContent = ZOOM_LABELS[currentZoom];
-    
-    console.log(`🔍 زوم: ${ZOOM_LABELS[currentZoom]} (${pixelValue}px)`);
 }
-
 // ============================================================
 // 8. ⚡ سرعة الصوت
 // ============================================================
@@ -450,7 +595,6 @@ function bindSpeedControls() {
         const isHidden = speedMenu.classList.contains('hidden');
         
         if (isHidden) {
-            // احسب الموضع
             const rect = newSpeedBtn.getBoundingClientRect();
             speedMenu.style.left = `${rect.left}px`;
             speedMenu.style.bottom = `${window.innerHeight - rect.top + 8}px`;
@@ -464,15 +608,38 @@ function bindSpeedControls() {
         console.log('⚡ قائمة السرعة:', isHidden ? 'مفتوحة' : 'مغلقة');
     });
     
-    // النقر على خيار
+    // ✅ ربط الخيارات
     options.forEach(btn => {
         const newBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(newBtn, btn);
         
         newBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            
             const speed = parseInt(newBtn.dataset.speed);
-            setSpeed(speed);
+            console.log(`⚡ اختيار سرعة: ${speed}x`);
+            
+            // ✅ دعم المشغل البسيط + WaveSurfer
+            const rate = speed === 0 ? 0.1 : speed;
+            
+            if (ViewerState.simpleAudio) {
+                ViewerState.simpleAudio.playbackRate = rate;
+                console.log(`  ✅ simpleAudio.playbackRate = ${rate}`);
+            }
+            
+            if (ViewerState.wavesurfer && ViewerState.wavesurfer.setPlaybackRate) {
+                ViewerState.wavesurfer.setPlaybackRate(rate);
+            }
+            
+            // تحديث الزر
+            const label = document.getElementById('speed-label');
+            if (label) label.textContent = `${speed}x`;
+            
+            // تحديث التمييز
+            document.querySelectorAll('.speed-option').forEach(b => b.classList.remove('active'));
+            newBtn.classList.add('active');
+            
+            // إغلاق القائمة
             speedMenu.classList.add('hidden');
         });
     });
@@ -486,11 +653,20 @@ function bindSpeedControls() {
     
     updateSpeedActive();
 }
+
+
+
 function setSpeed(speed) {
     currentSpeed = speed;
+    const rate = speed === 0 ? 0.1 : speed;
     
-    if (ViewerState.wavesurfer) {
-        const rate = speed === 0 ? 0.1 : speed;
+    // ✅ دعم المشغل البسيط
+    if (ViewerState.simpleAudio) {
+        ViewerState.simpleAudio.playbackRate = rate;
+    }
+    
+    // ✅ دعم WaveSurfer (إن وُجد)
+    if (ViewerState.wavesurfer && ViewerState.wavesurfer.setPlaybackRate) {
         ViewerState.wavesurfer.setPlaybackRate(rate);
     }
     
@@ -569,11 +745,19 @@ function goToAyahById(ayahId) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
     
-    if (ViewerState.wavesurfer) {
-        const ayah = TimingState.ayahs[idx];
+    // ✅ دعم المشغل البسيط + WaveSurfer
+    const ayah = TimingState.ayahs[idx];
+    
+    if (ViewerState.simpleAudio) {
+        // ✅ مشغل بسيط
+        ViewerState.simpleAudio.currentTime = ayah.start;
+        ViewerState.simpleAudio.play();
+        console.log(`🎵 الصوت انتقل للآية ${ayahId} عند ${ayah.start}s (simpleAudio)`);
+    } else if (ViewerState.wavesurfer) {
+        // ✅ WaveSurfer
         ViewerState.wavesurfer.setTime(ayah.start);
         ViewerState.wavesurfer.play();
-        console.log(`🎵 الصوت انتقل للآية ${ayahId} عند ${ayah.start}s`);
+        console.log(`🎵 الصوت انتقل للآية ${ayahId} عند ${ayah.start}s (wavesurfer)`);
     }
 }
 

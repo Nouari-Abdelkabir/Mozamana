@@ -271,23 +271,41 @@ async function getSurahText(mushafId, surahNum) {
        // نُجهّز نسختين لكل اية:
     // 1. text: نص نظيف (للمزامنة والبحث)
     // 2. html: نص مع HTML (للعرض بالألوان)
-    let ayahCounter = 0;
-    const cleaned = cleanAyahs.map(item => {
-        if (item.ayah > 0) {
-            ayahCounter = item.ayah;
-        } else if (item.ayah === 0 && item.text && !item.text.startsWith('سُورَةُ')) {
-            ayahCounter++;
-        }
-        
-        return {
-            id: item.ayah > 0 ? item.ayah : ayahCounter,
-            originalAyah: item.ayah,
-            text: cleanAyahText(item.text),           // نص نظيف
-            html: cleanAyahHtml(item.text),           // HTML مع الألوان
-            page: item.page,
-            raw: item.text
-        };
-    });
+        let ayahCounter = 0;
+        const cleaned = cleanAyahs.map(item => {
+            // ✅ تحديد إذا كانت بسملة (آية 0 في سورة غير الفاتحة)
+            const isBasmala = item.ayah === 0 && item.text && 
+                            !item.text.startsWith('سُورَةُ') &&
+                            (item.text.includes('بسم') || item.text.includes('بِسۡمِ'));
+            
+            if (item.ayah > 0) {
+                ayahCounter = item.ayah;
+            } else if (isBasmala) {
+                // ✅ البسملة: نحتفظ بها بدون رقم
+                // (id = 0 يعني "ليست آية")
+                return {
+                    id: 0,   // ← البسملة
+                    originalAyah: item.ayah,
+                    isBasmala: true,
+                    text: cleanAyahText(item.text),
+                    html: cleanAyahHtml(item.text),
+                    page: item.page,
+                    raw: item.text
+                };
+            } else if (item.ayah === 0) {
+                // ✅ عنوان السورة (تمت إزالته مسبقاً)
+                ayahCounter++;
+            }
+            
+            return {
+                id: item.ayah > 0 ? item.ayah : ayahCounter,
+                originalAyah: item.ayah,
+                text: cleanAyahText(item.text),
+                html: cleanAyahHtml(item.text),
+                page: item.page,
+                raw: item.text
+            };
+        });
     
     console.log(`📖 السورة ${surahNum}: ${cleaned.length} اية`);
     return cleaned;
