@@ -186,6 +186,9 @@
                             VTT
                         </button>
                     </div>
+                    <button id="save-to-folder-btn" class="btn-primary w-full text-xs py-2 flex items-center justify-center gap-2 mb-3">
+                        <i data-lucide="save" class="w-4 h-4"></i>                        حفظ في مجلد alignments
+                    </button>
                     <button id="reset-all-btn"
                         class="w-full text-red-500 text-xs py-2 rounded-lg hover:bg-red-500/10 transition-colors flex items-center justify-center gap-2">
                         <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
@@ -254,7 +257,11 @@
                 <div class="waveform-wrapper">
                     <div id="waveform"></div>
                     
-                    <!-- أزرار الزوم -->
+                    <!-- شريط التقسيمات (يظهر بدل الموجة) -->
+                    <div id="segments-bar" class="segments-bar hidden">
+                        <div id="segments-track" class="segments-track"></div>
+                    </div>
+                    
                     <div class="zoom-controls">
                         <button id="zoom-wave-in" class="zoom-btn" title="تكبير">
                             <i data-lucide="zoom-in" class="w-4 h-4"></i>
