@@ -60,11 +60,11 @@ function buildAudioUrl(reciterCode, surahNum) {
         return `https://media.way2quran.com/${reciterCode}/${suraNum}.mp3`;
     }
 
-    // عبد الرشيد صوفي (أبو الحارث)
+     // عبد الرشيد صوفي (أبو الحارث) — بدون padStart
     if (reciterCode === 'abdul-rashid-soufi/abi-al-harith-an-al-kisai') {
-        return `https://media.way2quran.com/${reciterCode}/${suraNum}.mp3`;
+        return `https://media.way2quran.com/${reciterCode}/${rawNum}.mp3`;
     }
-
+    
     // أيمن المزني (رويس)
     if (reciterCode === 'ayman-al-mazni/ruways-an-yaqub-al-hadrami') {
         return `https://media.way2quran.com/${reciterCode}/${suraNum}.mp3`;
