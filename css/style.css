@@ -140,7 +140,7 @@ body {
     top: 0;
     z-index: 50;
     padding: 8px 16px;
-    height: 72px;
+    height: 50px;
     display: flex;
     align-items: center;
 }
@@ -149,8 +149,8 @@ body {
     display: grid;
     grid-template-columns: minmax(280px, 320px) 1fr;
     grid-template-rows: auto 1fr;
-    gap: 16px;
-    padding: 16px;
+    gap: 10px;
+    padding: 10px;
     padding-bottom: 260px;
     max-width: 1920px;
     margin: 0 auto;
@@ -420,7 +420,7 @@ body.dark-mode .audio-section {
 }
 
 .btn-cut {
-    background: linear-gradient(135deg, var(--accent), var(--accent-light));
+    background: linear-gradient(135deg, #000, #F6000C);
     color: white;
     box-shadow: 0 2px 6px var(--accent-glow);
 }
@@ -924,8 +924,8 @@ button {
 @media (max-width: 1024px) {
     .main-grid {
         grid-template-columns: minmax(260px, 35%) 1fr;
-        gap: 10px;
-        padding: 10px;
+        gap: 5px;
+        padding: 5px;
         padding-bottom: 260px;
     }
     
@@ -937,8 +937,8 @@ button {
 @media (max-width: 768px) {
     .main-grid {
         grid-template-columns: 1fr;
-        gap: 10px;
-        padding: 10px;
+        gap: 5px;
+        padding: 5px;
         padding-bottom: 300px;
     }
     
@@ -1133,73 +1133,61 @@ button {
 }
 
 /* ============================================================
-   📊 شريط التقسيمات (بدل الموجة)
+   📊 شريط التقسيمات
    ============================================================ */
+
 .segments-bar {
     width: 100%;
     background: var(--bg-input);
     border-radius: 8px;
     padding: 8px 4px;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow-x: hidden;
     position: relative;
     min-height: 60px;
 }
 
-.segments-bar::-webkit-scrollbar {
-    height: 6px;
-}
-
-.segments-bar::-webkit-scrollbar-thumb {
-    background: var(--primary);
-    border-radius: 3px;
-}
-
 .segments-track {
     display: flex;
-    align-items: flex-end;
-    gap: 3px;
+    flex-direction: row-reverse;
+    align-items: stretch;
+    gap: 1px;
     min-height: 40px;
-    padding: 0 4px;
-    position: relative;
+    padding: 0;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: auto;              /* ✅ للتمرير */
+    overflow-y: hidden;
+    scroll-behavior: smooth;
 }
 
-/* كل قسم = آية */
+.segments-track::-webkit-scrollbar {
+    height: 4px;
+}
+
+.segments-track::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 2px;
+}
+
 .segment {
     height: 40px;
     background: linear-gradient(180deg, #10b981, #065F46);
-    border-radius: 3px;
     cursor: pointer;
-    transition: all 0.15s ease;
-    flex-shrink: 0;
     position: relative;
-    min-width: 2px;
+    box-sizing: border-box;
+    /* ✅ display من JS — inline-block */
+    /* ❌ لا flex-grow، لا flex-basis، لا width */
+}
+
+.segment.cut {
+    background: linear-gradient(180deg, #0ea5e9, #0369a1) !important;
+    box-shadow: 0 0 8px rgba(14, 165, 233, 0.5);
 }
 
 .segment:hover {
-    background: linear-gradient(180deg, #34d399, #059669);
-    transform: translateY(-2px);
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    filter: brightness(1.15);
 }
 
-/* القسم النشط (يُشغّل حالياً) */
-.segment.active {
-    background: linear-gradient(180deg, #fbbf24, #d97706);
-    box-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
-    transform: translateY(-2px);
-}
-
-/* القسم المثبّت (تم قطعه) */
-.segment.fixed {
-    background: linear-gradient(180deg, #0ea5e9, #0369a1);
-}
-
-/* القسم المثبّت والنشط */
-.segment.fixed.active {
-    background: linear-gradient(180deg, #fbbf24, #d97706);
-}
-
-/* خط المؤشر الحالي */
 .segment-cursor {
     position: absolute;
     top: 0;
@@ -1208,29 +1196,21 @@ button {
     background: #ef4444;
     box-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
     pointer-events: none;
-    transition: left 0.05s linear;
     z-index: 10;
+    transition: left 0.05s linear;
 }
 
-/* رقم الآية فوق كل قسم (يظهر عند hover) */
-.segment::before {
-    content: attr(data-ayah);
-    position: absolute;
-    top: -22px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 10px;
-    color: var(--text-muted);
-    background: var(--bg-card);
-    padding: 2px 6px;
-    border-radius: 4px;
-    opacity: 0;
-    transition: opacity 0.15s ease;
-    white-space: nowrap;
-    pointer-events: none;
-    border: 1px solid var(--border-color);
-}
 
-.segment:hover::before {
-    opacity: 1;
+
+/* ============================================================
+   🚫 إلغاء التمويه (Tailwind)
+   ============================================================ */
+
+.backdrop-blur-sm,
+.backdrop-blur-md,
+.backdrop-blur-lg,
+.backdrop-blur-xl {
+    --tw-backdrop-blur: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
 }
