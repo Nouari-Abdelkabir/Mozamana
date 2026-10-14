@@ -49,15 +49,16 @@
          ============================================================ -->
     <header class="main-header">
         <div class="container mx-auto h-full px-6 flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/40 transform -rotate-3">
-                    <i data-lucide="audio-lines" class="text-white w-6 h-6"></i>
+            <div class="flex items-center gap-3">
+                <!-- ✅ أيقونة المزامنة -->
+                <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/40">
+                    <i data-lucide="refresh-cw" class="text-white w-6 h-6"></i>
                 </div>
-                <div>
-                    <h1 class="text-2xl font-bold tracking-tight flex items-center gap-2">
-                        مزامنة
-                    </h1>
-                </div>
+                
+                <!-- ✅ النص -->
+                <h1 class="text-2xl font-bold text-white">
+                    مزامنة
+                </h1>
             </div>
             <nav class="flex items-center gap-4">
                 <button id="how-it-works-btn"
@@ -162,40 +163,42 @@
                         </div>
                     </div>
 
+                    <!-- بطاقة تصدير التوقيتات -->
+                    <div id="export-container" class="card export-card hidden">
+                        <div class="card-header">
+                            <i data-lucide="download" class="text-amber-500 w-4 h-4"></i>
+                            <h3 class="text-sm font-semibold">تصدير التوقيتات</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="grid grid-cols-3 gap-2 ">
+                                <button id="export-json" class="btn-secondary text-xs py-2 flex flex-col items-center gap-1">
+                                    <i data-lucide="file-json" class="w-4 h-4"></i>
+                                    JSON
+                                </button>
+                                <button id="export-srt" class="btn-secondary text-xs py-2 flex flex-col items-center gap-1">
+                                    <i data-lucide="subtitles" class="w-4 h-4"></i>
+                                    SRT
+                                </button>
+                                <button id="export-vtt" class="btn-secondary text-xs py-2 flex flex-col items-center gap-1">
+                                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                                    VTT
+                                </button>
+                            </div>
+                            <button id="save-to-folder-btn" class="btn-primary w-full text-xs py-2 flex items-center justify-center gap-2 mb-3">
+                                <i data-lucide="save" class="w-4 h-4"></i>                        حفظ في مجلد alignments
+                            </button>
+                            <button id="reset-all-btn"
+                                class="w-full text-red-500 text-xs py-2 rounded-lg hover:bg-red-500/10 transition-colors flex items-center justify-center gap-2">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                                استعادة التوقيتات الأصلية
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
-            <!-- بطاقة تصدير التوقيتات -->
-            <div id="export-container" class="card export-card hidden">
-                <div class="card-header">
-                    <i data-lucide="download" class="text-amber-500 w-4 h-4"></i>
-                    <h3 class="text-sm font-semibold">تصدير التوقيتات</h3>
-                </div>
-                <div class="card-body">
-                    <div class="grid grid-cols-3 gap-2 ">
-                        <button id="export-json" class="btn-secondary text-xs py-2 flex flex-col items-center gap-1">
-                            <i data-lucide="file-json" class="w-4 h-4"></i>
-                            JSON
-                        </button>
-                        <button id="export-srt" class="btn-secondary text-xs py-2 flex flex-col items-center gap-1">
-                            <i data-lucide="subtitles" class="w-4 h-4"></i>
-                            SRT
-                        </button>
-                        <button id="export-vtt" class="btn-secondary text-xs py-2 flex flex-col items-center gap-1">
-                            <i data-lucide="file-text" class="w-4 h-4"></i>
-                            VTT
-                        </button>
-                    </div>
-                    <button id="save-to-folder-btn" class="btn-primary w-full text-xs py-2 flex items-center justify-center gap-2 mb-3">
-                        <i data-lucide="save" class="w-4 h-4"></i>                        حفظ في مجلد alignments
-                    </button>
-                    <button id="reset-all-btn"
-                        class="w-full text-red-500 text-xs py-2 rounded-lg hover:bg-red-500/10 transition-colors flex items-center justify-center gap-2">
-                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
-                        استعادة التوقيتات الأصلية
-                    </button>
-                </div>
-            </div>
+            
 
         </aside>
 
@@ -498,8 +501,8 @@
          نافذة تعديل النص
          ============================================================ -->
     <div id="edit-text-modal"
-        class="hidden fixed inset-0 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in"
-        style="background: rgba(0,0,0,0.5);">
+        class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in">
+        style="background: rgba(0, 0, 0, 0.2);">
         <div class="card w-full max-w-3xl flex flex-col max-h-[90vh]">
             <div class="card-header justify-between">
                 <div class="flex items-center gap-3">
@@ -539,8 +542,7 @@
          نافذة "كيف يعمل"
          ============================================================ -->
     <div id="how-it-works-modal"
-        class="hidden fixed inset-0 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in"
-        style="background: rgba(0,0,0,0.5);">
+    class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in">
         <div class="card w-full max-w-2xl flex flex-col max-h-[90vh]">
             <div class="card-header justify-between">
                 <div class="flex items-center gap-3">
@@ -594,8 +596,7 @@
          نافذة أكواد Colab
          ============================================================ -->
     <div id="colab-code-modal"
-        class="hidden fixed inset-0 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in"
-        style="background: rgba(0,0,0,0.5);">
+        class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in">
         <div class="card w-full max-w-3xl flex flex-col max-h-[90vh]">
             <div class="card-header justify-between">
                 <div class="flex items-center gap-3">
