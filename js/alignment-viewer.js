@@ -19,9 +19,7 @@ const ViewerState = {
 // ============================================================
 // حالة الزوم والسرعة
 // ============================================================
-let currentZoom = 0;
-const ZOOM_LEVELS = [1, 2, 5, 10];
-const ZOOM_LABELS = ['1x', '2x', '5x', '10x'];
+
 
 let currentSpeed = 1;
 
@@ -179,6 +177,13 @@ async function initWavesurfer(audioUrl, isLocal = false) {
         
         // ✅ ربط أزرار التشغيل
         bindSimplePlayerButtons(audio);
+        // ✅ ارسم الأشرطة
+        setTimeout(() => {
+            if (window.showSegmentsBar && ViewerState.audioDuration) {
+                console.log('🎨 رسم الأشرطة من initWavesurfer...');
+                showSegmentsBar(ViewerState.audioDuration);
+            }
+        }, 100);
     };
     
     // 5. تحديث الشريط أثناء التشغيل
@@ -241,47 +246,71 @@ function showSegmentsBar(duration) {
     
     if (!bar || !track) return;
     
-    // ✅ أخفِ waveform، أظهر segments
     if (waveContainer) waveContainer.classList.add('hidden');
     bar.classList.remove('hidden');
     
-    // ✅ امسح القديم
     track.innerHTML = '';
     
-    // ✅ إذا لم تكن هناك توقيتات، اعرض شريطاً واحداً
+    // ✅ إذا لم تكن هناك توقيتات
     if (!TimingState.ayahs || TimingState.ayahs.length === 0) {
         const seg = document.createElement('div');
         seg.className = 'segment';
-        seg.style.width = '100%';
         seg.style.flex = '1';
         seg.dataset.ayah = 'كامل السورة';
         track.appendChild(seg);
         return;
     }
     
-    // ✅ ارسم قسماً لكل آية
-    const totalDuration = duration || TimingState.audioDuration;
-    const trackWidth = track.parentElement.offsetWidth - 16;
+    // ✅ احسب المجموع
+    let totalDuration = 0;
+    TimingState.ayahs.forEach(a => {
+        totalDuration += (a.end - a.start);
+    });
     
+    console.log(`📊 مجموع المدد: ${totalDuration.toFixed(2)}s`);
+    
+    // ✅ ارسم كل شريط
     TimingState.ayahs.forEach((ayah, idx) => {
         const seg = document.createElement('div');
         seg.className = 'segment';
         seg.dataset.ayah = `آية ${ayah.ayah_number}`;
         seg.dataset.index = idx;
         
-        // العرض النسبي (بحسب المدة)
-         // ✅ العرض النسبي (بحسب المدة) — استخدم width وليس flex
+        // ✅ استخدم flexGrow فقط
+        // في showSegmentsBar — استبدل الكتلة
         const ayahDuration = ayah.end - ayah.start;
+        const isCurrent = (idx === TimingState.currentIndex);
+        const effectiveGrow = isCurrent ? ayahDuration * zoomLevel : ayahDuration;
+
+        seg.style.flexGrow = `${effectiveGrow}`;
+        seg.style.flexBasis = '0';
+        seg.style.flexShrink = '1';
+        seg.style.minWidth = '0';
+
+        // ✅ إطار ذهبي للشريط الحالي
+        if (isCurrent) {
+            seg.style.outline = '2px solid #f59e0b';
+            seg.style.outlineOffset = '-2px';
+            seg.style.zIndex = '5';
+        }
+
+        // ✅ استخدم width فقط
         const widthPercent = (ayahDuration / totalDuration) * 100;
         seg.style.width = `${widthPercent}%`;
-        seg.style.flexShrink = '0';
+        seg.style.display = 'inline-block';   // ← بدل flex
+        seg.style.marginRight = '1px';
+        seg.style.boxSizing = 'border-box';       // ← للسماح بالتمدد الصغير
         
-        // إذا كان مثبّتاً
-        if (ayah.fixed) {
-            seg.classList.add('fixed');
+        // ✅ مثبّتة (مقطوعة) — أزرق
+        if (ayah.fixed === true) {
+            seg.classList.add('cut');          // ← اسم جديد
+            console.log(`🔵 آية ${ayah.ayah_number} (${ayahDuration.toFixed(2)}s)`);
+        } else {
+            // ⚠️ لا widthPercent — استخدم ayahDuration
+            console.log(`🟢 آية ${ayah.ayah_number} (${ayahDuration.toFixed(2)}s)`);
         }
         
-        // النقر → انتقال إلى الآية
+        // النقر → انتقال للآية
         seg.onclick = () => {
             console.log(`👆 نقر على القسم ${idx + 1}`);
             
@@ -298,19 +327,15 @@ function showSegmentsBar(duration) {
         track.appendChild(seg);
     });
     
-    // ✅ أضف مؤشر التقدم
+    // ✅ أضف المؤشر
     const cursor = document.createElement('div');
     cursor.className = 'segment-cursor';
     cursor.id = 'segments-cursor';
     cursor.style.left = '0';
-    cursor.style.top = '8px';
-    cursor.style.bottom = '8px';
-    cursor.style.height = 'auto';
     track.appendChild(cursor);
     
     console.log(`✅ تم رسم ${TimingState.ayahs.length} قسم`);
 }
-
 // ============================================================
 // تحديث مؤشر التقدم
 // ============================================================
@@ -318,11 +343,30 @@ function updateSegmentsCursor(currentTime, duration) {
     const cursor = document.getElementById('segments-cursor');
     const track = document.getElementById('segments-track');
     
-    if (!cursor || !track) return;
+    if (!cursor || !track || !TimingState.ayahs) return;
     
-    const percent = (currentTime / duration) * 100;
+    const totalDuration = TimingState.ayahs.reduce((s, a) => s + (a.end - a.start), 0);
     const trackWidth = track.offsetWidth;
-    cursor.style.left = `${(percent / 100) * trackWidth}px`;
+    
+    // ابحث عن الآية الحالية
+    let offset = 0;
+    for (let i = 0; i < TimingState.ayahs.length; i++) {
+        const a = TimingState.ayahs[i];
+        const segWidth = ((a.end - a.start) / totalDuration) * trackWidth;
+        
+        if (currentTime >= a.start && currentTime < a.end) {
+            // ✅ المؤشر داخل هذه الآية — احسب النسبة داخلها
+            const localPercent = (currentTime - a.start) / (a.end - a.start);
+            const leftPos = offset + (localPercent * segWidth);
+            cursor.style.left = `${leftPos}px`;
+            return;
+        }
+        
+        offset += segWidth;
+    }
+    
+    // إذا لم نجد — ضع في البداية
+    cursor.style.left = '0px';
 }
 
 // ============================================================
@@ -527,7 +571,64 @@ function bindPlayerButtons() {
 }
 
 // ============================================================
-// 7. 🔊 الزوم على waveform
+// 7. 🔍 الزوم على الشريط الحالي
+// ============================================================
+let zoomLevel = 1;                          // مستوى الزوم
+const ZOOM_FACTORS = [1, 1.5, 2, 3, 5];      // مستويات الزوم
+let zoomIndex = 0;                           // الفهرس
+
+// ============================================================
+// تكبير/تصغير الشريط الحالي
+// ============================================================
+function zoomCurrentSegment(direction) {
+    const newIndex = zoomIndex + direction;
+    
+    if (newIndex < 0 || newIndex >= ZOOM_FACTORS.length) {
+        console.log('⚠️ وصلت للحد الأقصى/الأدنى');
+        return;
+    }
+    
+    zoomIndex = newIndex;
+    zoomLevel = ZOOM_FACTORS[zoomIndex];
+    
+    console.log(`🔍 مستوى الزوم: ${zoomLevel}x`);
+    
+    // ✅ أعد رسم الشريط
+    if (window.redrawSegments) {
+        redrawSegments();
+    } else if (window.showSegmentsBar && ViewerState.audioDuration) {
+        showSegmentsBar(ViewerState.audioDuration);
+    }
+    
+    // ✅ حدّث المؤشر
+    const label = document.getElementById('zoom-level');
+    if (label) label.textContent = `${zoomLevel}x`;
+    
+    // ✅ مرّر للشريط الحالي
+    setTimeout(() => {
+        scrollToCurrentSegment();
+    }, 150);
+}
+
+// ============================================================
+// تمرير الشريط الحالي للمركز
+// ============================================================
+function scrollToCurrentSegment() {
+    const segments = document.querySelectorAll('.segment');
+    const current = segments[TimingState.currentIndex];
+    
+    if (current) {
+        current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+            inline: 'center'
+        });
+        console.log(`🎯 تم التمرير للآية ${TimingState.currentIndex + 1}`);
+    }
+}
+
+// ============================================================
+// ربط أزرار الزوم
 // ============================================================
 function bindZoomControls() {
     const zoomIn = document.getElementById('zoom-wave-in');
@@ -538,10 +639,8 @@ function bindZoomControls() {
         zoomIn.parentNode.replaceChild(newZoomIn, zoomIn);
         
         newZoomIn.addEventListener('click', () => {
-            if (currentZoom < ZOOM_LEVELS.length - 1) {
-                currentZoom++;
-                applyZoom();
-            }
+            console.log('🔍 تكبير الشريط الحالي');
+            zoomCurrentSegment(+1);
         });
     }
     
@@ -550,28 +649,12 @@ function bindZoomControls() {
         zoomOut.parentNode.replaceChild(newZoomOut, zoomOut);
         
         newZoomOut.addEventListener('click', () => {
-            if (currentZoom > 0) {
-                currentZoom--;
-                applyZoom();
-            }
+            console.log('🔍 تصغير الشريط الحالي');
+            zoomCurrentSegment(-1);
         });
     }
-    
-    // ✅ لا تستدعي applyZoom هنا — سيُستدعى عند ready
 }
 
-function applyZoom() {
-    const level = ZOOM_LEVELS[currentZoom];
-    
-    if (ViewerState.wavesurfer && ViewerState.wavesurfer.getDuration() > 0) {
-        try {
-            ViewerState.wavesurfer.zoom(level * 10);
-        } catch (e) {}
-    }
-    
-    const label = document.getElementById('zoom-level');
-    if (label) label.textContent = ZOOM_LABELS[currentZoom];
-}
 // ============================================================
 // 8. ⚡ سرعة الصوت
 // ============================================================

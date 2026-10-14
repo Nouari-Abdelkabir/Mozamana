@@ -222,23 +222,29 @@ async function updateAlignmentStatus() {
         const loadBtn = document.getElementById('load-alignment-btn');
         if (loadBtn) {
             loadBtn.onclick = async () => {
-                console.log('🖱️ نقر على [عرض التوقيتات]');
-                
-                // 1. اضبط الحالة
-                ViewerState.currentMushafId = UIState.currentMushafId;
-                ViewerState.currentReciterCode = UIState.currentReciterCode;
-                ViewerState.currentSurah = UIState.currentSurahNum;
-                ViewerState.currentAlignment = result.data;
-                
-                // 2. اعرض النص + الصوت
-                await displayAlignment(result.data);
-                
-                // 3. حمّل التوقيتات في المحرر
-                if (window.initTiming) {
-                    initTiming(result.data);
-                    showTimingPanel(true);
-                    updateTimingPanel();
+            console.log('🖱️ نقر على [عرض التوقيتات]');
+            
+            ViewerState.currentMushafId = UIState.currentMushafId;
+            ViewerState.currentReciterCode = UIState.currentReciterCode;
+            ViewerState.currentSurah = UIState.currentSurahNum;
+            ViewerState.currentAlignment = result.data;
+            
+            await displayAlignment(result.data);
+            
+            if (window.initTiming) {
+                initTiming(result.data);
+                showTimingPanel(true);
+                updateTimingPanel();
+            }
+            
+            // ✅ ارسم الأشرطة بالألوان الصحيحة
+            setTimeout(() => {
+                if (window.showSegmentsBar && ViewerState.audioDuration) {
+                    console.log('🎨 رسم الأشرطة بعد "عرض التوقيتات"...');
+                    showSegmentsBar(ViewerState.audioDuration);
                 }
+            }, 500);
+
                 
                 console.log('✅ تم عرض التوقيتات');
             };
@@ -398,7 +404,7 @@ async function generateAlignment() {
             end: parseFloat((currentTime + ayahDuration).toFixed(2)),
             wordCount: wordCounts[idx],
             confidence: 1.0,
-            manually_verified: false
+            manually_verified: false       // ✅ جديد = أخضر
         });
         
         currentTime += ayahDuration;
@@ -437,22 +443,21 @@ async function generateAlignment() {
         
         ViewerState.currentAlignment = alignmentData;
         
-        // أظهر لوحة التوقيتات
         if (window.initTiming) {
             initTiming(alignmentData);
             showTimingPanel(true);
             updateTimingPanel();
         }
         
-        // أعد رسم الأقسام
-        if (window.showSegmentsBar) {
-            showSegmentsBar(duration);
-        }
+        // ✅ ارسم الأشرطة (خضراء)
+        setTimeout(() => {
+            if (window.showSegmentsBar && ViewerState.audioDuration) {
+                console.log('🎨 رسم الأشرطة (خضراء)...');
+                showSegmentsBar(ViewerState.audioDuration);
+            }
+        }, 300);
         
-        // حدّث الحالة
         await updateAlignmentStatus();
-    } else {
-        alert('❌ فشل الحفظ: ' + (saveResult.message || 'غير معروف'));
     }
 }
 

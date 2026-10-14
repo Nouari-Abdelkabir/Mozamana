@@ -34,7 +34,7 @@ function initTiming(alignmentData) {
         ayah_number: a.ayah_number,
         start: a.start,
         end: a.end,
-        fixed: a.manually_verified || false
+        fixed: a.manually_verified === true   // ✅ يقرأ من الملف
     }));
     
     TimingState.currentIndex = 0;
@@ -757,12 +757,24 @@ function startPreviewMonitor() {
     
     window._previewMonitor = setInterval(() => {
         if (TimingState.mode !== 'preview') return;
-        if (!ViewerState.wavesurfer) return;
-        if (!ViewerState.wavesurfer.isPlaying()) return;
         
-        const currentTime = ViewerState.wavesurfer.getCurrentTime();
+        // ✅ دعم المشغل البسيط
+        let currentTime = 0;
+        let isPlaying = false;
         
-        // ابحث عن الاية الحالية
+        if (ViewerState.simpleAudio) {
+            currentTime = ViewerState.simpleAudio.currentTime;
+            isPlaying = !ViewerState.simpleAudio.paused;
+        } else if (ViewerState.wavesurfer) {
+            currentTime = ViewerState.wavesurfer.getCurrentTime();
+            isPlaying = ViewerState.wavesurfer.isPlaying();
+        } else {
+            return;
+        }
+        
+        if (!isPlaying) return;
+        
+        // ابحث عن الآية الحالية
         for (let i = 0; i < TimingState.ayahs.length; i++) {
             const a = TimingState.ayahs[i];
             if (currentTime >= a.start && currentTime < a.end) {
@@ -779,13 +791,12 @@ function startPreviewMonitor() {
                         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
                     
-                    // حدّث اللوحة
                     updateTimingPanel();
                 }
                 break;
             }
         }
-    }, 100); // كل 100ms
+    }, 100);
 }
 
 // ============================================================
